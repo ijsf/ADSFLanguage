@@ -50,6 +50,7 @@ const ops = {
   div:  { num: 2, eval: args => args.reduce((a, b) => Number(a) / Number(b)) },
   mul:  { num: 2, eval: args => args.reduce((a, b) => Number(a) * Number(b), 1) },
   
+  // Conditional instructions
   if:   { conditional: true, eval: args => {
     return Number(args[0]) ? Number(args[1]) : 0;
   }, parse: async (p, ast, data) => {
@@ -77,6 +78,7 @@ const ops = {
     }
   } },
   
+  // Code block instructions
   '{':  { end: '}', eval: args => args },
   '}':  { eval: args => args },
 
@@ -97,11 +99,13 @@ const ops = {
     data.prices.push({
       id: String(args[0])
     });
+    return 1;
   } },
   // cart_set_total(amount: Num)
   // cart_set_total(percentage: Str)
   cart_set_total: { num: 1, eval: (args, data) => {
     data.total = Number(args[0]);
+    return 1;
   } }
   
   // cart_has_coupon(couponString)
@@ -172,6 +176,7 @@ TelSellProgramError.prototype = Error.prototype;
 */
 
 const parse = tokens => {
+  console.log('tokens', tokens);
 
   let c = 0;
   const peek = () => tokens[c];
@@ -216,6 +221,8 @@ const parse = tokens => {
         // Parse operand
         node.expr.push(parseExpr());
       }
+      // Consume end operator
+      parseExpr();
       console.log('---');
     }
     else if (conditional) {
@@ -224,6 +231,7 @@ const parse = tokens => {
       node.expr.push({ type: IfBodyOp, expr: [ parseExpr() ] });
     }
     else {
+      // Operator without further use
       console.log('!!!', node);
     }
     console.log(`<<<`);
@@ -231,8 +239,13 @@ const parse = tokens => {
   };
 
   const parseExpr = () => /\d/.test(peek()) ? parseNum() : parseOp();
-
-  return parseExpr();
+  
+  // Always evaluate input as code block so multiple expressions at top level are supported
+  const node = { val: '{', type: Op, expr: [] };
+  while (peek()) {
+    node.expr.push(parseExpr());
+  }
+  return node;
 };
 
 /*
@@ -322,8 +335,15 @@ const run = async (input, program) => {
         total: 45
       },
       program: `
-if cart_has_item 1000
+if cart_has_item 1000 {
   cart_add_item 9000
+  cart_add_item 9001
+}
+{
+  cart_add_item 2000
+  cart_add_item 2001
+}
+cart_add_item 3000
 `
     };
     context.output = await run(context.input, context.program);

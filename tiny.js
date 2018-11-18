@@ -27,42 +27,81 @@
   ["mul", "3", "sub", "2", "sum", "1", "3", "4"]
   ```
 */
-const lex = str => str.split(' ').map(s => s.trim()).filter(s => s.length);
+const lex = str => str.split(/\s+/).map(s => s.trim()).filter(s => s.length);
 
 /*
   Operators
 */
 const Op = Symbol('op');
 const Num = Symbol('num');
-const Str = Symbol('str');
+//const Str = Symbol('str');
+
+const ConditionalOp = Symbol('conditionalop');
+const IfBodyOp = Symbol('ifbodyop');
+
+// TODO
+//
+// if
+// block
 
 const ops = {
-  sum:  { num: 2, parse: args => args.reduce((a, b) => Number(a) + Number(b), 0) },
-  sub:  { num: 2, parse: args => args.reduce((a, b) => Number(a) - Number(b)) },
-  div:  { num: 2, parse: args => args.reduce((a, b) => Number(a) / Number(b)) },
-  mul:  { num: 2, parse: args => args.reduce((a, b) => Number(a) * Number(b), 1) },
+  sum:  { num: 2, eval: args => args.reduce((a, b) => Number(a) + Number(b), 0) },
+  sub:  { num: 2, eval: args => args.reduce((a, b) => Number(a) - Number(b)) },
+  div:  { num: 2, eval: args => args.reduce((a, b) => Number(a) / Number(b)) },
+  mul:  { num: 2, eval: args => args.reduce((a, b) => Number(a) * Number(b), 1) },
   
-  if:   { num: 2, parse: args => {
+  if:   { conditional: true, eval: args => {
     return Number(args[0]) ? Number(args[1]) : 0;
+  }, parse: async (p, ast, data) => {
+    console.log('if');
+    console.log('if ast', ast);
+    console.log('if p', p);
+
+    // Internal AST validity check (debugging)
+    if (!(p.length >= 2 && p[0].type == ConditionalOp && p[1].type == IfBodyOp)) {
+      throw new TelSellASTError(`if does not have ConditionalOp and IfBodyOp`);
+    }
+    
+    // Evaluate ConditionalOp first
+    const condition = await evaluate(p[0], data);
+    console.log('if condition', condition);
+    if (condition && condition[0]) {
+      // If condition was true, evaluate IfBodyOp
+      const e = await evaluate(p[1], data);
+      console.log('if eval', e);
+      return e;
+    }
+    else {
+      // If condition was false, return false
+      return false;
+    }
   } },
+  
+  '{':  { end: '}', eval: args => args },
+  '}':  { eval: args => args },
 
   // cart_has_item(pricingId: Str) -> Num
-  cart_has_item: { num: 1, parse: (args, data) => {
+  cart_has_item: { num: 1, eval: (args, data) => {
     return data.prices && (data.prices.filter((p) => p.id == args[0]).length > 0) ? 1 : 0;
   } },
   // cart_set_item_amount(pricingId: Str, amount: Num)
   // cart_set_item_amount(pricingId: Str, percentage: Str)
-  cart_set_item_amount: { num: 2, parse: (args, data) => {
+  cart_set_item_amount: { num: 2, eval: (args, data) => {
   } },
   // cart_set_all_items_amount(pricingId: Str, amount: Num)
   // cart_set_all_items_amount(pricingId: Str, percentage: Str)
-  cart_set_all_items_amount: { num: 1, parse: (args, data) => {
+  cart_set_all_items_amount: { num: 1, eval: (args, data) => {
   } },
-  // cart_add_item(pricingId: Str)
-  cart_add_item: { num: 1, parse: async (args, data) => {
+  // cart_add_item(pricingId: Str) async
+  cart_add_item: { num: 1, eval: async (args, data) => {
     data.prices.push({
-      id: args[0]
+      id: String(args[0])
     });
+  } },
+  // cart_set_total(amount: Num)
+  // cart_set_total(percentage: Str)
+  cart_set_total: { num: 1, eval: (args, data) => {
+    data.total = Number(args[0]);
   } }
   
   // cart_has_coupon(couponString)
@@ -79,6 +118,12 @@ function TelSellSyntaxError(message) {
     this.message = (message || "");
 }
 TelSellSyntaxError.prototype = Error.prototype;
+
+function TelSellASTError(message) {
+    this.name = "TelSellASTError";
+    this.message = (message || "");
+}
+TelSellASTError.prototype = Error.prototype;
 
 function TelSellProgramError(message) {
     this.name = "TelSellProgramError";
@@ -142,17 +187,44 @@ const parse = tokens => {
       throw new TelSellSyntaxError(`${node.val} is not a valid operator`);
     }
     
-    // Consume operands according to specified # of defined operands
     const numOperands = ops[node.val].num;
-    console.log(`>>> '${node.val}' with '${numOperands}' operands`);
-    for (let i = 0; i < numOperands; i++) {
-      // Check for operand
-      console.log(`  ${i}: ` + peek());
-      if (!peek()) {
-        throw new TelSellSyntaxError(`${node.val} requires ${numOperands} operands`);
+    const endOperator = ops[node.val].end;
+    const conditional = ops[node.val].conditional;
+
+    // Consume tokens depending on operator configuration
+    if (numOperands) {
+      // Consume required number of operands
+      console.log(`>>> '${node.val}' with '${numOperands}' operands`);
+      for (let i = 0; i < numOperands; i++) {
+        // Check for operand
+        console.log(`  ${i}: ` + peek());
+        if (!peek()) {
+          throw new TelSellSyntaxError(`${node.val} requires ${numOperands} operands`);
+        }
+        // Parse operand
+        node.expr.push(parseExpr());
       }
-      // Parse operand
-      node.expr.push(parseExpr());
+    }
+    else if (endOperator) {
+      // Consume everything until end operator
+      console.log(`>>> '${node.val}' with '${endOperator}' end operand`);
+      while (peek() != endOperator) {
+        console.log('p', peek());
+        if (!peek()) {
+          throw new TelSellSyntaxError(`${node.val} requires closing operator ${endOperator}`);
+        }
+        // Parse operand
+        node.expr.push(parseExpr());
+      }
+      console.log('---');
+    }
+    else if (conditional) {
+      // Conditional operator: 2 operators (condition, clause)
+      node.expr.push({ type: ConditionalOp, expr: [ parseExpr() ] });
+      node.expr.push({ type: IfBodyOp, expr: [ parseExpr() ] });
+    }
+    else {
+      console.log('!!!', node);
     }
     console.log(`<<<`);
     return node;
@@ -175,16 +247,28 @@ const parse = tokens => {
 const evaluate = async (ast, data) => {
   console.log("* " + JSON.stringify(ast));
 
-  if (ast.type === Num) return ast.val;
+  // Evaluate immediate values immediately
+  if (ast.type === Num) {
+    return ast.val;
+  }
+  
   console.log("expr", ast.expr);
-  //return await ops[ast.val].parse(ast.expr.map(evaluate));
-
-  // Resolve any Promises in expressions
+  //return await ops[ast.val].eval(ast.expr.map(evaluate));
+  
+  // Resolve expressions (children)
   const p = await Promise.all(ast.expr);
-  // Recursive call, resolve all Promises
-  const q = await Promise.all(p.map((p) => evaluate(p, data)));
-  // Parse expression, resolve Promise
-  return await ops[ast.val].parse(q, data);
+  
+  // Check for custom AST parse function
+  console.log('ast', ast);
+  if (ast.val && ops[ast.val].parse) {
+    return await ops[ast.val].parse(p, ast, data);
+  }
+  else {
+    // Use standard recursive AST evaluation
+    const q = await Promise.all(p.map((p) => evaluate(p, data)));
+    // Parse expression, resolve Promise
+    return ast.val ? await ops[ast.val].eval(q, data) : q;
+  }
 };
 
 /*
@@ -234,7 +318,8 @@ const run = async (input, program) => {
             id: 1002,
             amount: 15.00
           },
-        ]
+        ],
+        total: 45
       },
       program: `
 if cart_has_item 1000

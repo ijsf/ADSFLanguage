@@ -60,7 +60,7 @@ const ops = {
 
     // Internal AST validity check (debugging)
     if (!(p.length >= 2 && p[0].type == ConditionalOp && p[1].type == IfBodyOp)) {
-      throw new TelSellASTError(`if does not have ConditionalOp and IfBodyOp`);
+      throw new ASDFASTError(`if does not have ConditionalOp and IfBodyOp`);
     }
     
     // Evaluate ConditionalOp first
@@ -117,23 +117,23 @@ const ops = {
 /*
   Errors
 */
-function TelSellSyntaxError(message) {
-    this.name = "TelSellSyntaxError";
+function ASDFSyntaxError(message) {
+    this.name = "ASDFSyntaxError";
     this.message = (message || "");
 }
-TelSellSyntaxError.prototype = Error.prototype;
+ASDFSyntaxError.prototype = Error.prototype;
 
-function TelSellASTError(message) {
-    this.name = "TelSellASTError";
+function ASDFASTError(message) {
+    this.name = "ASDFASTError";
     this.message = (message || "");
 }
-TelSellASTError.prototype = Error.prototype;
+ASDFASTError.prototype = Error.prototype;
 
-function TelSellProgramError(message) {
-    this.name = "TelSellProgramError";
+function ASDFProgramError(message) {
+    this.name = "ASDFProgramError";
     this.message = (message || "");
 }
-TelSellProgramError.prototype = Error.prototype;
+ASDFProgramError.prototype = Error.prototype;
 
 /*
   # Parser
@@ -189,7 +189,7 @@ const parse = tokens => {
     
     // Check for valid operator
     if (!ops[node.val]) {
-      throw new TelSellSyntaxError(`${node.val} is not a valid operator`);
+      throw new ASDFSyntaxError(`${node.val} is not a valid operator`);
     }
     
     const numOperands = ops[node.val].num;
@@ -204,7 +204,7 @@ const parse = tokens => {
         // Check for operand
         console.log(`  ${i}: ` + peek());
         if (!peek()) {
-          throw new TelSellSyntaxError(`${node.val} requires ${numOperands} operands`);
+          throw new ASDFSyntaxError(`${node.val} requires ${numOperands} operands`);
         }
         // Parse operand
         node.expr.push(parseExpr());
@@ -216,7 +216,7 @@ const parse = tokens => {
       while (peek() != endOperator) {
         console.log('p', peek());
         if (!peek()) {
-          throw new TelSellSyntaxError(`${node.val} requires closing operator ${endOperator}`);
+          throw new ASDFSyntaxError(`${node.val} requires closing operator ${endOperator}`);
         }
         // Parse operand
         node.expr.push(parseExpr());
@@ -293,10 +293,10 @@ const evaluate = async (ast, data) => {
 const run = async (input, program) => {
   // Validity checks
   if (!program) {
-    throw new TelSellProgramError(`No valid program`);
+    throw new ASDFProgramError(`No valid program`);
   }
   if (!input) {
-    throw new TelSellProgramError(`No valid input`);
+    throw new ASDFProgramError(`No valid input`);
   }
   
   // Construct AST

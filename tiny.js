@@ -1,8 +1,3 @@
-//
-// TODO
-// * error handling
-//
-
 /*
   Lexer
 
@@ -75,7 +70,7 @@ const ops = {
         found = true;
       }
       if (!Number.isFinite(p.amount)) {
-        //throw new ASDFProgramError(`Product ${JSON.stringify(p)} does not have a valid amount`);
+        throw new ASDFProgramError(`Product ${JSON.stringify(p)} does not have a valid amount`);
       }
       total += p.amount;
     }

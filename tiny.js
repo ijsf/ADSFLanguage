@@ -55,9 +55,9 @@ const ops = {
   },
   
   // Code block instructions
-  '{':  { end: '}', eval: args => args },
-  '}':  { eval: args => args },
-
+  '{': { end: '}', eval: args => args },
+  '}': {},
+  
   // cart_has_item(pricingId: Str) -> Num
   cart_has_item: { num: 1, eval: (args, data) => {
     const pricingId = args[0];
@@ -148,8 +148,6 @@ ASDFProgramError.prototype = Error.prototype;
 */
 
 const parse = tokens => {
-  console.log('tokens', tokens);
-
   let c = 0;
   const peek = () => tokens[c];
   const consume = () => tokens[c++];
@@ -172,10 +170,8 @@ const parse = tokens => {
     // Consume tokens depending on operator configuration
     if (numOperands) {
       // Consume required number of operands
-      console.log(`>>> '${node.val}' with '${numOperands}' operands`);
       for (let i = 0; i < numOperands; i++) {
         // Check for operand
-        console.log(`  ${i}: ` + peek());
         if (!peek()) {
           throw new ASDFSyntaxError(`${node.val} requires ${numOperands} operands`);
         }
@@ -185,9 +181,7 @@ const parse = tokens => {
     }
     else if (endOperator) {
       // Consume everything until end operator
-      console.log(`>>> '${node.val}' with '${endOperator}' end operand`);
       while (peek() != endOperator) {
-        console.log('p', peek());
         if (!peek()) {
           throw new ASDFSyntaxError(`${node.val} requires closing operator ${endOperator}`);
         }
@@ -196,7 +190,6 @@ const parse = tokens => {
       }
       // Consume end operator
       parseExpr();
-      console.log('---');
     }
     else if (conditional) {
       // Conditional operator: 2 operators (condition, clause)
@@ -205,9 +198,7 @@ const parse = tokens => {
     }
     else {
       // Operator without further use
-      console.log('!!!', node);
     }
-    console.log(`<<<`);
     return node;
   };
 
@@ -239,7 +230,7 @@ const parse = tokens => {
   The Evaluator is inherently asynchronous, so will wait for each (asynchronous) operand to finish before traversing.
 */
 const evaluate = async (ast, data) => {
-  console.log("* " + JSON.stringify(ast));
+  //console.log("* " + JSON.stringify(ast));
 
   // Evaluate immediate values immediately
   if (ast.type === Num) {
@@ -249,14 +240,10 @@ const evaluate = async (ast, data) => {
     return ast.val;
   }
   
-  console.log("expr", ast.expr);
-  //return await ops[ast.val].eval(ast.expr.map(evaluate));
-  
   // Resolve expressions (children)
   const p = await Promise.all(ast.expr);
   
   // Check for custom AST parse function
-  console.log('ast', ast);
   if (ast.val && ops[ast.val].parse) {
     return await ops[ast.val].parse(p, ast, data);
   }
@@ -264,7 +251,7 @@ const evaluate = async (ast, data) => {
     // Use standard recursive AST evaluation
     const q = await Promise.all(p.map((p) => evaluate(p, data)));
     // Parse expression, resolve Promise
-    return ast.val ? await ops[ast.val].eval(q, data) : q;
+    return ast.val && ops[ast.val].eval ? await ops[ast.val].eval(q, data) : q;
   }
 };
 

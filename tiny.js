@@ -17,22 +17,23 @@ const lex = str => str.split(/\s+/).map(s => s.trim()).filter(s => s.length);
 */
 const Op = Symbol('op');
 const Num = Symbol('num');
+const NumPercent = Symbol('numpercent');
 const Str = Symbol('str');
 
 const ConditionalOp = Symbol('conditionalop');
 const IfBodyOp = Symbol('ifbodyop');
 
 const ops = {
-  sum:  { num: 2, eval: args => args.reduce((a, b) => Number(a) + Number(b), 0) },
-  sub:  { num: 2, eval: args => args.reduce((a, b) => Number(a) - Number(b)) },
-  div:  { num: 2, eval: args => args.reduce((a, b) => Number(a) / Number(b)) },
-  mul:  { num: 2, eval: args => args.reduce((a, b) => Number(a) * Number(b), 1) },
+  sum:  { num: 2, eval: args => args.reduce((a, b) => Number(a.val) + Number(b.val), 0) },
+  sub:  { num: 2, eval: args => args.reduce((a, b) => Number(a.val) - Number(b.val)) },
+  div:  { num: 2, eval: args => args.reduce((a, b) => Number(a.val) / Number(b.val)) },
+  mul:  { num: 2, eval: args => args.reduce((a, b) => Number(a.val) * Number(b.val), 1) },
   
   // Conditional instructions
   if: {
     conditional: true,
     eval: args => {
-      return Number(args[0]) ? Number(args[1]) : 0;
+      return Number(args[0].val) ? Number(args[1].val) : 0;
     },
     parse: async (p, ast, data) => {
       // Internal AST validity check (debugging)
@@ -55,22 +56,22 @@ const ops = {
   },
   
   // Code block instructions
-  '{': { end: '}', eval: args => args },
+  '{': { end: '}' },
   '}': {},
   
   // cart_has_item(pricingId: Str) -> Num
   cart_has_item: { num: 1, eval: (args, data) => {
-    const pricingId = args[0];
-    return data.prices && (data.prices.filter((p) => p.id == pricingId).length > 0) ? 1 : 0;
+    const pricingId = args[0].val;
+    return data.items && (data.items.filter((p) => p.id == pricingId).length > 0) ? 1 : 0;
   } },
   // cart_set_item_amount(pricingId: Str, amount: Num)
   cart_set_item_amount: { num: 2, eval: (args, data) => {
-    const pricingId = args[0];
-    const amount = Number(args[1]);
+    const pricingId = args[0].val;
+    const amountAst = args[1];
     let found = false, total = 0;
-    for (p of data.prices) {
-      if (p.id == args[0]) {
-        p.amount = amount;
+    for (p of data.items) {
+      if (p.id == args[0].val) {
+        p.amount = amountAst.type == NumPercent ? (p.amount * Number(amountAst.val) / 100) : Number(amountAst.val);
         found = true;
       }
       if (!Number.isFinite(p.amount)) {
@@ -83,10 +84,10 @@ const ops = {
   } },
   // cart_set_all_items_amount(amount: Num)
   cart_set_all_items_amount: { num: 1, eval: (args, data) => {
-    const amount = Number(args[0]);
+    const amountAst = args[0];
     let found = false, total = 0;
-    for (p of data.prices) {
-      p.amount = amount;
+    for (p of data.items) {
+      p.amount = amountAst.type == NumPercent ? (p.amount * Number(amountAst.val) / 100) : Number(amountAst.val);
       total += p.amount;
     }
     data.total = total;
@@ -94,19 +95,21 @@ const ops = {
   } },
   // cart_add_item(pricingId: Str) async
   cart_add_item: { num: 1, eval: async (args, data) => {
-    data.prices.push({
-      id: String(args[0])
+    data.items.push({
+      id: String(args[0].val)
     });
     return 1;
   } },
   // cart_set_total(amount: Num)
   cart_set_total: { num: 1, eval: (args, data) => {
-    data.total = Number(args[0]);
+    const amountAst = args[0];
+    data.total = amountAst.type == NumPercent ? (data.total * Number(amountAst.val) / 100) : Number(amountAst.val);
     return 1;
   } }
   
-  // cart_has_coupon(couponString)
-  // user_has_purchase(productId)
+  // cart_has_promo(promoName:Str)
+  // cart_has_coupon(couponId:Str)
+  // user_has_purchase(productId:Str)
 };
 
 /*
@@ -141,9 +144,10 @@ ASDFProgramError.prototype = Error.prototype;
 
   ```
   num := 0-9+
+  numpercent := 0-9+%
   str := .*
   op := sum | sub | div | mul | if | { | } | ...
-  expr := num | 'str' | op expr+
+  expr := num | numpercent | 'str' | op expr+
   ```
 */
 
@@ -153,6 +157,7 @@ const parse = tokens => {
   const consume = () => tokens[c++];
 
   const parseNum = () => ({ val: Number(consume()), type: Num });
+  const parseNumPercent = () => ({ val: Number(consume().slice(0, -1)), type: NumPercent });
   const parseStr = () => ({ val: String(consume()).slice(1, -1), type: Str });
 
   const parseOp = () => {
@@ -204,8 +209,11 @@ const parse = tokens => {
 
   // Expression parser
   const parseExpr = () => {
-    if (/[-+]?[0-9]*\.?[0-9]+/.test(peek())) {
+    if (/[-+]?[0-9]*\.?[0-9]+$/.test(peek())) {
       return parseNum();
+    }
+    else if (/[-+]?[0-9]*\.?[0-9]+%$/.test(peek())) {
+      return parseNumPercent();
     }
     else if (/'.*'/.test(peek())) {
       return parseStr();
@@ -234,10 +242,13 @@ const evaluate = async (ast, data) => {
 
   // Evaluate immediate values immediately
   if (ast.type === Num) {
-    return ast.val;
+    return ast;
+  }
+  else if (ast.type == NumPercent) {
+    return ast;
   }
   else if (ast.type == Str) {
-    return ast.val;
+    return ast;
   }
   
   // Resolve expressions (children)
@@ -290,7 +301,7 @@ const run = async (input, program) => {
   try {
     const context = {
       input: {
-        prices: [
+        items: [
           {
             id: 'abc',
             amount: 15.00
@@ -316,7 +327,11 @@ if cart_has_item 'abc' {
   cart_add_item 2001
 }
 cart_add_item 3000
-cart_set_item_amount 3000 1000.50
+cart_set_item_amount 3000 0
+
+cart_set_item_amount 1001 50%
+
+cart_set_total 0.1%
 `
     };
     context.output = await run(context.input, context.program);

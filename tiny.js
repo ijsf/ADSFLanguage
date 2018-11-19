@@ -1,3 +1,8 @@
+//
+// TODO
+// * error handling
+//
+
 /*
   Lexer
 
@@ -67,6 +72,9 @@ const ops = {
       if (p.id == args[0]) {
         p.amount = amount;
         found = true;
+      }
+      if (!Number.isFinite(p.amount)) {
+        //throw new ASDFProgramError(`Product ${JSON.stringify(p)} does not have a valid amount`);
       }
       total += p.amount;
     }
@@ -146,7 +154,7 @@ const parse = tokens => {
   const peek = () => tokens[c];
   const consume = () => tokens[c++];
 
-  const parseNum = () => ({ val: parseInt(consume()), type: Num });
+  const parseNum = () => ({ val: Number(consume()), type: Num });
   const parseStr = () => ({ val: String(consume()).slice(1, -1), type: Str });
 
   const parseOp = () => {
@@ -205,7 +213,7 @@ const parse = tokens => {
 
   // Expression parser
   const parseExpr = () => {
-    if (/\d/.test(peek())) {
+    if (/[-+]?[0-9]*\.?[0-9]+/.test(peek())) {
       return parseNum();
     }
     else if (/'.*'/.test(peek())) {
@@ -313,7 +321,7 @@ const run = async (input, program) => {
       },
       program: `
 if cart_has_item 'abc' {
-  cart_add_item 9000
+  cart_add_item 'id'
   cart_add_item 9001
 }
 {
@@ -321,6 +329,7 @@ if cart_has_item 'abc' {
   cart_add_item 2001
 }
 cart_add_item 3000
+cart_set_item_amount 3000 1000.50
 `
     };
     context.output = await run(context.input, context.program);

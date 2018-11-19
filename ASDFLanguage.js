@@ -46,7 +46,7 @@ const ops = {
     parse: async (p, ast, data) => {
       // Internal AST validity check (debugging)
       if (!(p.length >= 2 && p[0].type == ConditionalOp && p[1].type == IfBodyOp)) {
-        throw new ASDFASTError(`if does not have ConditionalOp and IfBodyOp`);
+        throw new ASDFInternalError(`if does not have ConditionalOp and IfBodyOp`);
       }
 
       // Evaluate ConditionalOp first
@@ -121,6 +121,7 @@ const ops = {
   } },
   // cart_add_item(pricingId: Str) async
   cart_add_item: { num: 1, eval: async (args, data) => {
+    /* TODO: ACHTUNG: Query database */
     data.items.push({
       id: String(args[0].val)
     });
@@ -139,33 +140,11 @@ const ops = {
     return 1;
   } }
   
+  /* TODO: Possible future functions */
   // cart_has_promo(promoName:Str)
   // cart_has_coupon(couponId:Str)
   // user_has_purchase(productId:Str)
 };
-
-/*
-  Errors
-
-  All throwable Errors are defined here.
-*/
-function ASDFSyntaxError(message) {
-    this.name = "ASDFSyntaxError";
-    this.message = (message || "");
-}
-ASDFSyntaxError.prototype = Error.prototype;
-
-function ASDFASTError(message) {
-    this.name = "ASDFASTError";
-    this.message = (message || "");
-}
-ASDFASTError.prototype = Error.prototype;
-
-function ASDFProgramError(message) {
-    this.name = "ASDFProgramError";
-    this.message = (message || "");
-}
-ASDFProgramError.prototype = Error.prototype;
 
 /*
   Parser
@@ -313,68 +292,62 @@ const evaluate = async (ast, data) => {
 };
 
 /*
-  Interpreter
+  Errors
+
+  All throwable Errors are defined here.
+*/
+class ASDFSyntaxError extends Error {
+  constructor(message) {
+    this.name = "ASDFSyntaxError";
+    this.message = (message || "");
+  }
+}
+
+class ASDFInternalError extends Error {
+  constructor(message) {
+    this.name = "ASDFInternalError";
+    this.message = (message || "");
+  }
+}
+
+class ASDFProgramError extends Error {
+  constructor(message) {
+    this.name = "ASDFProgramError";
+    this.message = (message || "");
+  }
+}
+
+/*
+  ASDFInterpreter
 
   Initiates the actual program parsing, lexing and evaluation.
 */
-const run = async (input, program) => {
-  // Validity checks
-  if (!program) {
-    throw new ASDFProgramError(`No valid program`);
+class ASDFInterpreter {
+  static async run(input, program) {
+    // Validity checks
+    if (!program) {
+      throw new ASDFProgramError(`No valid program`);
+    }
+    if (!input) {
+      throw new ASDFProgramError(`No valid input`);
+    }
+  
+    // Construct AST
+    const ast = parse(lex(program));
+  
+    // Copy input object to new data object that will be changed by evaluate
+    let data = JSON.parse(JSON.stringify(input));
+  
+    // Evaluate AST
+    await evaluate(ast, data);
+    return data;
   }
-  if (!input) {
-    throw new ASDFProgramError(`No valid input`);
-  }
-  
-  // Construct AST
-  const ast = parse(lex(program));
-  
-  // Copy input object to new data object that will be changed by evaluate
-  let data = JSON.parse(JSON.stringify(input));
-  
-  // Evaluate AST
-  await evaluate(ast, data);
-  return data;
-};
-
-
-/*
-  Main
-
-  Test program.
-*/
-(async () => {
-  try {
-    const context = {
-      input: {
-        items: [
-          {
-            id: 'compressor',
-            amount: 15.00
-          },
-          {
-            id: 'bitcrusher',
-            amount: 15.00
-          },
-          {
-            id: 'noize',
-            amount: 15.00
-          },
-        ],
-        total: 45,
-        discount: 0
-      },
-      program: `
-if >= cart_count_items 3 {
-  cart_add_item 'bassxl'
-  cart_add_discount cart_get_item_amount 'bassxl'
 }
-`
-    };
-    context.output = await run(context.input, context.program);
-    console.log(context.output);
-  }
-  catch (e) {
-    console.error(e);
-  }
-})();
+
+/* ES5 module export compatibility for NodeJS testing purposes */
+module.exports = {
+  ASDFSyntaxError,
+  ASDFInternalError,
+  ASDFProgramError,
+  ASDFInterpreter
+};

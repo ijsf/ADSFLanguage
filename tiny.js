@@ -24,7 +24,11 @@ const Utils = {
   // Calculates a total amount properly
   calcTotal: (x) => Utils.toFixedPrecision2(x),
   // Calculates a number based on the AST node (either Num or NumPercent)
-  calcNumber: (ast, value) => ast.type == NumPercent ? (value * Number(ast.val) / 100) : Number(ast.val)
+  calcNumber: (ast, value) => ast.type == NumPercent ? (value * Number(ast.val) / 100) : Number(ast.val),
+  // Convert from JS to Num type
+  JStoNum: (x) => ({ val: Number(x), type: Num }),
+  // Convert from JS to Str type
+  JStoStr: (x) => ({ val: String(x), type: Str })
 };
 
 const ops = {
@@ -47,7 +51,7 @@ const ops = {
 
       // Evaluate ConditionalOp first
       const condition = await evaluate(p[0], data);
-      if (condition && condition[0]) {
+      if (condition && condition[0].val) {
         // If condition was true, evaluate IfBodyOp
         const e = await evaluate(p[1], data);
         return e;
@@ -63,12 +67,30 @@ const ops = {
   '{': { end: '}' },
   '}': {},
   
+  // Comparison instructions
+  '>': { num: 2, eval: (args) => args[0].val > args[1].val },
+  '<': { num: 2, eval: (args) => args[0].val < args[1].val },
+  '>=': { num: 2, eval: (args) => args[0].val >= args[1].val },
+  '<=': { num: 2, eval: (args) => args[0].val <= args[1].val },
+  '==': { num: 2, eval: (args) => args[0].val == args[1].val },
+  '!=': { num: 2, eval: (args) => args[0].val != args[1].val },
+  
+  // cart_count_items() -> Num
+  cart_count_items: { num: 0, eval: (args, data) => {
+    return data.items.length;
+  } },
   // cart_has_item(pricingId: Str) -> Num
   cart_has_item: { num: 1, eval: (args, data) => {
     const pricingId = args[0].val;
     return data.items && (data.items.filter((p) => p.id == pricingId).length > 0) ? 1 : 0;
   } },
-  // cart_set_item_amount(pricingId: Str, amount: Num)
+  // cart_get_item_amount(pricingId: Str) -> Num
+  cart_get_item_amount: { num: 1, eval: (args, data) => {
+    const pricingId = args[0].val;
+    const item = data.items ? data.items.filter((p) => p.id == pricingId) : [];
+    return (item.length > 0) ? Number(item[0].amount) : Number(-1);
+  } },
+  // cart_set_item_amount(pricingId: Str, amount: Num;NumPercent)
   cart_set_item_amount: { num: 2, eval: (args, data) => {
     const pricingId = args[0].val;
     const amountAst = args[1];
@@ -86,7 +108,7 @@ const ops = {
     data.total = Utils.calcTotal(total);
     return found ? 1 : 0;
   } },
-  // cart_set_all_items_amount(amount: Num)
+  // cart_set_all_items_amount(amount: Num;NumPercent)
   cart_set_all_items_amount: { num: 1, eval: (args, data) => {
     const amountAst = args[0];
     let found = false, total = 0;
@@ -104,10 +126,16 @@ const ops = {
     });
     return 1;
   } },
-  // cart_set_total(amount: Num)
+  // cart_set_total(amount: Num;NumPercent)
   cart_set_total: { num: 1, eval: (args, data) => {
     const amountAst = args[0];
     data.total = Utils.calcTotal(Utils.calcNumber(amountAst, data.total));
+    return 1;
+  } },
+  // cart_add_discount(amount: Num)
+  cart_add_discount: { num: 1, eval: (args, data) => {
+    const amount = args[0].val;
+    data.discount += Utils.calcTotal(amount);
     return 1;
   } }
   
@@ -265,8 +293,22 @@ const evaluate = async (ast, data) => {
   else {
     // Use standard recursive AST evaluation
     const q = await Promise.all(p.map((p) => evaluate(p, data)));
-    // Parse expression, resolve Promise
-    return ast.val && ops[ast.val].eval ? await ops[ast.val].eval(q, data) : q;
+    // If operation is defined
+    if (ast.val && ops[ast.val].eval) {
+      // Parse expression, resolve Promise
+      const e = await ops[ast.val].eval(q, data);
+      // Convert to appropriate return type if specified, otherwise convert to Num by default
+      if (ast.returnType == Str) {
+        return Utils.JStoStr(e);
+      }
+      else {
+        return Utils.JStoNum(e);
+      }
+    }
+    else {
+      // Return unmodified
+      return q;
+    }
   }
 };
 
@@ -307,35 +349,26 @@ const run = async (input, program) => {
       input: {
         items: [
           {
-            id: 'abc',
+            id: 'compressor',
             amount: 15.00
           },
           {
-            id: 1001,
+            id: 'bitcrusher',
             amount: 15.00
           },
           {
-            id: 1002,
+            id: 'noize',
             amount: 15.00
           },
         ],
-        total: 45
+        total: 45,
+        discount: 0
       },
       program: `
-if cart_has_item 'abc' {
-  cart_add_item 'id'
-  cart_add_item 9001
+if >= cart_count_items 3 {
+  cart_add_item 'bassxl'
+  cart_add_discount cart_get_item_amount 'bassxl'
 }
-{
-  cart_add_item 2000
-  cart_add_item 2001
-}
-cart_add_item 3000
-cart_set_item_amount 3000 0
-
-cart_set_item_amount 1001 50%
-
-cart_set_total 50%
 `
     };
     context.output = await run(context.input, context.program);

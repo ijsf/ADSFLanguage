@@ -18,6 +18,15 @@ const Str = Symbol('str');
 const ConditionalOp = Symbol('conditionalop');
 const IfBodyOp = Symbol('ifbodyop');
 
+const Utils = {
+  // Avoids floating point rounding numbers and guarantees exact definitions for 2 fraction digits
+  toFixedPrecision2: (x) => Number(x.toFixed(2)),
+  // Calculates a total amount properly
+  calcTotal: (x) => Utils.toFixedPrecision2(x),
+  // Calculates a number based on the AST node (either Num or NumPercent)
+  calcNumber: (ast, value) => ast.type == NumPercent ? (value * Number(ast.val) / 100) : Number(ast.val)
+};
+
 const ops = {
   sum:  { num: 2, eval: args => args.reduce((a, b) => Number(a.val) + Number(b.val), 0) },
   sub:  { num: 2, eval: args => args.reduce((a, b) => Number(a.val) - Number(b.val)) },
@@ -66,7 +75,7 @@ const ops = {
     let found = false, total = 0;
     for (p of data.items) {
       if (p.id == args[0].val) {
-        p.amount = amountAst.type == NumPercent ? (p.amount * Number(amountAst.val) / 100) : Number(amountAst.val);
+        p.amount = Utils.calcNumber(amountAst, p.amount)
         found = true;
       }
       if (!Number.isFinite(p.amount)) {
@@ -74,7 +83,7 @@ const ops = {
       }
       total += p.amount;
     }
-    data.total = total;
+    data.total = Utils.calcTotal(total);
     return found ? 1 : 0;
   } },
   // cart_set_all_items_amount(amount: Num)
@@ -82,10 +91,10 @@ const ops = {
     const amountAst = args[0];
     let found = false, total = 0;
     for (p of data.items) {
-      p.amount = amountAst.type == NumPercent ? (p.amount * Number(amountAst.val) / 100) : Number(amountAst.val);
+      p.amount = Utils.calcNumber(amountAst, p.amount)
       total += p.amount;
     }
-    data.total = total;
+    data.total = Utils.calcTotal(total);
     return 1;
   } },
   // cart_add_item(pricingId: Str) async
@@ -98,7 +107,7 @@ const ops = {
   // cart_set_total(amount: Num)
   cart_set_total: { num: 1, eval: (args, data) => {
     const amountAst = args[0];
-    data.total = amountAst.type == NumPercent ? (data.total * Number(amountAst.val) / 100) : Number(amountAst.val);
+    data.total = Utils.calcTotal(Utils.calcNumber(amountAst, data.total));
     return 1;
   } }
   
@@ -326,7 +335,7 @@ cart_set_item_amount 3000 0
 
 cart_set_item_amount 1001 50%
 
-cart_set_total 0.1%
+cart_set_total 50%
 `
     };
     context.output = await run(context.input, context.program);

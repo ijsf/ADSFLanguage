@@ -55,15 +55,34 @@ const ops = {
 
   // cart_has_item(pricingId: Str) -> Num
   cart_has_item: { num: 1, eval: (args, data) => {
-    return data.prices && (data.prices.filter((p) => p.id == args[0]).length > 0) ? 1 : 0;
+    const pricingId = args[0];
+    return data.prices && (data.prices.filter((p) => p.id == pricingId).length > 0) ? 1 : 0;
   } },
   // cart_set_item_amount(pricingId: Str, amount: Num)
   cart_set_item_amount: { num: 2, eval: (args, data) => {
-    
-    return 1;
+    const pricingId = args[0];
+    const amount = Number(args[1]);
+    let found = false, total = 0;
+    for (p of data.prices) {
+      if (p.id == args[0]) {
+        p.amount = amount;
+        found = true;
+      }
+      total += p.amount;
+    }
+    data.total = total;
+    return found ? 1 : 0;
   } },
-  // cart_set_all_items_amount(pricingId: Str, amount: Num)
+  // cart_set_all_items_amount(amount: Num)
   cart_set_all_items_amount: { num: 1, eval: (args, data) => {
+    const amount = Number(args[0]);
+    let found = false, total = 0;
+    for (p of data.prices) {
+      p.amount = amount;
+      total += p.amount;
+    }
+    data.total = total;
+    return 1;
   } },
   // cart_add_item(pricingId: Str) async
   cart_add_item: { num: 1, eval: async (args, data) => {
@@ -80,8 +99,6 @@ const ops = {
   
   // cart_has_coupon(couponString)
   // user_has_purchase(productId)
-  
-  // block
 };
 
 /*

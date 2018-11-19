@@ -1,36 +1,14 @@
 /*
-  # Lexer
+  Lexer
 
-  The lexer is responsible for turning the input string into
-  a list of tokens. Usually a token looks the following way:
-
-  ```javascript
-  {
-    "type": Symbol("Operator"),
-    "value: "-"
-  }
-  ```
-
-  In our case we're keeping everything simplified and store
-  only the token's value. We can infer the type based on
-  regular expressions defined below.
-
-  In short, `lex` will turn the following expression:
-
-  ```
-  mul 3 sub 2 sum 1 3 4
-  ```
-
-  To the following array:
-
-  ```
-  ["mul", "3", "sub", "2", "sum", "1", "3", "4"]
-  ```
+  The lexer is responsible for turning the input string into a list of tokens.
 */
 const lex = str => str.split(/\s+/).map(s => s.trim()).filter(s => s.length);
 
 /*
   Operators
+
+  All operators symbols and tables are defined here.
 */
 const Op = Symbol('op');
 const Num = Symbol('num');
@@ -38,11 +16,6 @@ const Num = Symbol('num');
 
 const ConditionalOp = Symbol('conditionalop');
 const IfBodyOp = Symbol('ifbodyop');
-
-// TODO
-//
-// if
-// block
 
 const ops = {
   sum:  { num: 2, eval: args => args.reduce((a, b) => Number(a) + Number(b), 0) },
@@ -116,6 +89,8 @@ const ops = {
 
 /*
   Errors
+
+  All throwable Errors are defined here.
 */
 function ASDFSyntaxError(message) {
     this.name = "ASDFSyntaxError";
@@ -136,43 +111,17 @@ function ASDFProgramError(message) {
 ASDFProgramError.prototype = Error.prototype;
 
 /*
-  # Parser
+  Parser
 
-  The parser is responsible for turning the list of tokens
-  into an AST or Abstract Syntax Tree. In the example below
-  we use recursive descent parsing to produce the AST
-  from the input token array.
-
-  Visually, the parsing is a process which turns the array:
-
-  ```javascript
-  const tokens = ["sub", "2", "sum", "1", "3", "4"];
-  ```
-
-  to the following tree:
-
-  ```
-   sub
-   / \
-  2  sum
-     /|\
-    1 3 4
-  ```
+  The parser is responsible for turning the list of tokens into an Abstract Syntax Tree.
 
   The parser uses the following grammar to parse the input token array:
 
   ```
   num := 0-9+
-  op := sum | sub | div | mul
+  op := sum | sub | div | mul | if | { | } | ...
   expr := num | op expr+
   ```
-
-  This translated to plain English, means:
-  - `num` can be any sequence of the numbers between 0 and 9.
-  - `op` can be any of `sum`, `sub`, `div`, `mul`.
-  - `expr` can be either a number (i.e. `num`) or an operation followed by one or more `expr`s.
-
-  Notice that `expr` has a recursive declaration.
 */
 
 const parse = tokens => {
@@ -249,13 +198,10 @@ const parse = tokens => {
 };
 
 /*
-  # Evaluator
+  Evaluator
 
-  Finally, this is our evaluator. In it we simply visit each node
-  from the tree with pre-order traversal and either:
-
-  - Return the corresponding value, in case the node is of type number.
-  - Perform the corresponding arithmetic operation, in case of an operation node.
+  Each AST node is visited with pre-order traversal and each operand is evaluated.
+  The Evaluator is inherently asynchronous, so will wait for each (asynchronous) operand to finish before traversing.
 */
 const evaluate = async (ast, data) => {
   console.log("* " + JSON.stringify(ast));
@@ -285,10 +231,9 @@ const evaluate = async (ast, data) => {
 };
 
 /*
-  # Interpreter
+  Interpreter
 
-  In order to interpret the input stream we feed the parser with the input
-  from the lexer and the evaluator with the output of the parser.
+  Initiates the actual program parsing, lexing and evaluation.
 */
 const run = async (input, program) => {
   // Validity checks
@@ -313,6 +258,8 @@ const run = async (input, program) => {
 
 /*
   Main
+
+  Test program.
 */
 (async () => {
   try {

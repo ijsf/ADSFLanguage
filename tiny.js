@@ -12,7 +12,7 @@ const lex = str => str.split(/\s+/).map(s => s.trim()).filter(s => s.length);
 */
 const Op = Symbol('op');
 const Num = Symbol('num');
-//const Str = Symbol('str');
+const Str = Symbol('str');
 
 const ConditionalOp = Symbol('conditionalop');
 const IfBodyOp = Symbol('ifbodyop');
@@ -24,32 +24,30 @@ const ops = {
   mul:  { num: 2, eval: args => args.reduce((a, b) => Number(a) * Number(b), 1) },
   
   // Conditional instructions
-  if:   { conditional: true, eval: args => {
-    return Number(args[0]) ? Number(args[1]) : 0;
-  }, parse: async (p, ast, data) => {
-    console.log('if');
-    console.log('if ast', ast);
-    console.log('if p', p);
+  if: {
+    conditional: true,
+    eval: args => {
+      return Number(args[0]) ? Number(args[1]) : 0;
+    },
+    parse: async (p, ast, data) => {
+      // Internal AST validity check (debugging)
+      if (!(p.length >= 2 && p[0].type == ConditionalOp && p[1].type == IfBodyOp)) {
+        throw new ASDFASTError(`if does not have ConditionalOp and IfBodyOp`);
+      }
 
-    // Internal AST validity check (debugging)
-    if (!(p.length >= 2 && p[0].type == ConditionalOp && p[1].type == IfBodyOp)) {
-      throw new ASDFASTError(`if does not have ConditionalOp and IfBodyOp`);
+      // Evaluate ConditionalOp first
+      const condition = await evaluate(p[0], data);
+      if (condition && condition[0]) {
+        // If condition was true, evaluate IfBodyOp
+        const e = await evaluate(p[1], data);
+        return e;
+      }
+      else {
+        // If condition was false, return false
+        return false;
+      }
     }
-    
-    // Evaluate ConditionalOp first
-    const condition = await evaluate(p[0], data);
-    console.log('if condition', condition);
-    if (condition && condition[0]) {
-      // If condition was true, evaluate IfBodyOp
-      const e = await evaluate(p[1], data);
-      console.log('if eval', e);
-      return e;
-    }
-    else {
-      // If condition was false, return false
-      return false;
-    }
-  } },
+  },
   
   // Code block instructions
   '{':  { end: '}', eval: args => args },
@@ -60,11 +58,11 @@ const ops = {
     return data.prices && (data.prices.filter((p) => p.id == args[0]).length > 0) ? 1 : 0;
   } },
   // cart_set_item_amount(pricingId: Str, amount: Num)
-  // cart_set_item_amount(pricingId: Str, percentage: Str)
   cart_set_item_amount: { num: 2, eval: (args, data) => {
+    
+    return 1;
   } },
   // cart_set_all_items_amount(pricingId: Str, amount: Num)
-  // cart_set_all_items_amount(pricingId: Str, percentage: Str)
   cart_set_all_items_amount: { num: 1, eval: (args, data) => {
   } },
   // cart_add_item(pricingId: Str) async
@@ -75,7 +73,6 @@ const ops = {
     return 1;
   } },
   // cart_set_total(amount: Num)
-  // cart_set_total(percentage: Str)
   cart_set_total: { num: 1, eval: (args, data) => {
     data.total = Number(args[0]);
     return 1;
@@ -119,8 +116,9 @@ ASDFProgramError.prototype = Error.prototype;
 
   ```
   num := 0-9+
+  str := .*
   op := sum | sub | div | mul | if | { | } | ...
-  expr := num | op expr+
+  expr := num | 'str' | op expr+
   ```
 */
 
@@ -132,6 +130,7 @@ const parse = tokens => {
   const consume = () => tokens[c++];
 
   const parseNum = () => ({ val: parseInt(consume()), type: Num });
+  const parseStr = () => ({ val: String(consume()).slice(1, -1), type: Str });
 
   const parseOp = () => {
     const node = { val: consume(), type: Op, expr: [] };
@@ -187,7 +186,18 @@ const parse = tokens => {
     return node;
   };
 
-  const parseExpr = () => /\d/.test(peek()) ? parseNum() : parseOp();
+  // Expression parser
+  const parseExpr = () => {
+    if (/\d/.test(peek())) {
+      return parseNum();
+    }
+    else if (/'.*'/.test(peek())) {
+      return parseStr();
+    }
+    else {
+      return parseOp();
+    }
+  };
   
   // Always evaluate input as code block so multiple expressions at top level are supported
   const node = { val: '{', type: Op, expr: [] };
@@ -208,6 +218,9 @@ const evaluate = async (ast, data) => {
 
   // Evaluate immediate values immediately
   if (ast.type === Num) {
+    return ast.val;
+  }
+  else if (ast.type == Str) {
     return ast.val;
   }
   
@@ -267,7 +280,7 @@ const run = async (input, program) => {
       input: {
         prices: [
           {
-            id: 1000,
+            id: 'abc',
             amount: 15.00
           },
           {
@@ -282,7 +295,7 @@ const run = async (input, program) => {
         total: 45
       },
       program: `
-if cart_has_item 1000 {
+if cart_has_item 'abc' {
   cart_add_item 9000
   cart_add_item 9001
 }

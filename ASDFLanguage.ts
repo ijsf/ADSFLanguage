@@ -41,7 +41,7 @@ const Utils = {
 };
 
 const ops = {
-  sum:  { num: 2, eval: args => args.reduce((a, b) => Number(a.val) + Number(b.val), 0) },
+  add:  { num: 2, eval: args => args.reduce((a, b) => Number(a.val) + Number(b.val), 0) },
   sub:  { num: 2, eval: args => args.reduce((a, b) => Number(a.val) - Number(b.val)) },
   div:  { num: 2, eval: args => args.reduce((a, b) => Number(a.val) / Number(b.val)) },
   mul:  { num: 2, eval: args => args.reduce((a, b) => Number(a.val) * Number(b.val), 1) },
@@ -172,7 +172,7 @@ const ops = {
   num := 0-9+
   numpercent := 0-9+%
   str := .*
-  op := sum | sub | div | mul | if | { | } | ...
+  op := add | sub | div | mul | if | { | } | ...
   expr := num | numpercent | 'str' | op expr+
   ```
 */

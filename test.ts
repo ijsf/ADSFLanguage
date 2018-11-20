@@ -40,7 +40,7 @@ import { ASDFSyntaxError, ASDFInternalError, ASDFProgramError } from './ASDFLang
     // ASDF program source
     const source = `
 if >= cart_count_items 3 {
-  cart_add_discount cart_get_item_amount 'bassxl'
+  cart_add_discount cart_get_item_amount 'compressor'
 }
 `;
 

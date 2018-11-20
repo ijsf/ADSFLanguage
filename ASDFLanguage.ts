@@ -97,7 +97,10 @@ const ops = {
   cart_get_item_amount: { num: 1, eval: (args, data) => {
     const pricingId = args[0].val;
     const item = data.items ? data.items.filter((p) => p.price.id == pricingId) : [];
-    return (item.length > 0) ? Number(item[0].price.amount) : Number(-1);
+    if (item.length < 1) {
+      throw new ASDFProgramError(`Item '${pricingId}' does not exist`);
+    }
+    return Number(item[0].price.amount);
   } },
   // cart_set_item_amount(pricingId: Str, amount: Num;NumPercent)
   cart_set_item_amount: { num: 2, eval: (args, data) => {

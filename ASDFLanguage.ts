@@ -11,7 +11,7 @@ const lex = str => str.split(/\s+/).map(s => s.trim()).filter(s => s.length);
   Object containing callbacks for custom functionality.
 */
 let CustomFunctions = {
-  getItem: async () => throw new ASDFInternalError('CustomFunctions.getItem not defined')
+  getItem: async ({ id }) => { throw new ASDFInternalError('CustomFunctions.getItem not defined') }
 };
 
 /*
@@ -104,7 +104,7 @@ const ops = {
     const pricingId = args[0].val;
     const amountAst = args[1];
     let found = false, total = 0;
-    for (p of data.items) {
+    for (let p of data.items) {
       if (p.price.id == args[0].val) {
         p.price.amount = Utils.calcNumber(amountAst, p.price.amount)
         found = true;
@@ -121,7 +121,7 @@ const ops = {
   cart_set_all_items_amount: { num: 1, eval: (args, data) => {
     const amountAst = args[0];
     let found = false, total = 0;
-    for (p of data.items) {
+    for (let p of data.items) {
       p.price.amount = Utils.calcNumber(amountAst, p.price.amount)
       total += p.price.amount;
     }
@@ -308,22 +308,25 @@ const evaluate = async (ast, data) => {
 
   All throwable Errors are defined here.
 */
-class ASDFSyntaxError extends Error {
+export class ASDFSyntaxError extends Error {
   constructor(message) {
+    super(message);
     this.name = "ASDFSyntaxError";
     this.message = (message || "");
   }
 }
 
-class ASDFInternalError extends Error {
+export class ASDFInternalError extends Error {
   constructor(message) {
+    super(message);
     this.name = "ASDFInternalError";
     this.message = (message || "");
   }
 }
 
-class ASDFProgramError extends Error {
+export class ASDFProgramError extends Error {
   constructor(message) {
+    super(message);
     this.name = "ASDFProgramError";
     this.message = (message || "");
   }
@@ -334,7 +337,7 @@ class ASDFProgramError extends Error {
 
   Initiates the actual program parsing, lexing and evaluation.
 */
-class ASDFInterpreter {
+export class ASDFInterpreter {
   static async run(input, program, functions) {
     // Validity checks
     if (!program) {
@@ -358,11 +361,3 @@ class ASDFInterpreter {
     return data;
   }
 }
-
-/* ES5 module export compatibility for NodeJS testing purposes */
-module.exports = {
-  ASDFSyntaxError,
-  ASDFInternalError,
-  ASDFProgramError,
-  ASDFInterpreter
-};

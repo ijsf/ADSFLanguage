@@ -6,6 +6,15 @@
 const lex = str => str.split(/\s+/).map(s => s.trim()).filter(s => s.length);
 
 /*
+  CustomFunctions
+
+  Object containing callbacks for custom functionality.
+*/
+let CustomFunctions = {
+  getItem: async () => throw new ASDFInternalError('CustomFunctions.getItem not defined')
+};
+
+/*
   Operators
 
   All operators symbols and tables are defined here.
@@ -36,7 +45,7 @@ const ops = {
   sub:  { num: 2, eval: args => args.reduce((a, b) => Number(a.val) - Number(b.val)) },
   div:  { num: 2, eval: args => args.reduce((a, b) => Number(a.val) / Number(b.val)) },
   mul:  { num: 2, eval: args => args.reduce((a, b) => Number(a.val) * Number(b.val), 1) },
-  
+
   // Conditional instructions
   if: {
     conditional: true,
@@ -62,11 +71,11 @@ const ops = {
       }
     }
   },
-  
+
   // Code block instructions
   '{': { end: '}' },
   '}': {},
-  
+
   // Comparison instructions
   '>': { num: 2, eval: (args) => args[0].val > args[1].val },
   '<': { num: 2, eval: (args) => args[0].val < args[1].val },
@@ -74,7 +83,7 @@ const ops = {
   '<=': { num: 2, eval: (args) => args[0].val <= args[1].val },
   '==': { num: 2, eval: (args) => args[0].val == args[1].val },
   '!=': { num: 2, eval: (args) => args[0].val != args[1].val },
-  
+
   // cart_count_items() -> Num
   cart_count_items: { num: 0, eval: (args, data) => {
     return data.items.length;
@@ -82,13 +91,13 @@ const ops = {
   // cart_has_item(pricingId: Str) -> Num
   cart_has_item: { num: 1, eval: (args, data) => {
     const pricingId = args[0].val;
-    return data.items && (data.items.filter((p) => p.id == pricingId).length > 0) ? 1 : 0;
+    return data.items && (data.items.filter((p) => p.price.id == pricingId).length > 0) ? 1 : 0;
   } },
   // cart_get_item_amount(pricingId: Str) -> Num
   cart_get_item_amount: { num: 1, eval: (args, data) => {
     const pricingId = args[0].val;
-    const item = data.items ? data.items.filter((p) => p.id == pricingId) : [];
-    return (item.length > 0) ? Number(item[0].amount) : Number(-1);
+    const item = data.items ? data.items.filter((p) => p.price.id == pricingId) : [];
+    return (item.length > 0) ? Number(item[0].price.amount) : Number(-1);
   } },
   // cart_set_item_amount(pricingId: Str, amount: Num;NumPercent)
   cart_set_item_amount: { num: 2, eval: (args, data) => {
@@ -96,14 +105,14 @@ const ops = {
     const amountAst = args[1];
     let found = false, total = 0;
     for (p of data.items) {
-      if (p.id == args[0].val) {
-        p.amount = Utils.calcNumber(amountAst, p.amount)
+      if (p.price.id == args[0].val) {
+        p.price.amount = Utils.calcNumber(amountAst, p.price.amount)
         found = true;
       }
-      if (!Number.isFinite(p.amount)) {
+      if (!Number.isFinite(p.price.amount)) {
         throw new ASDFProgramError(`Product ${JSON.stringify(p)} does not have a valid amount`);
       }
-      total += p.amount;
+      total += p.price.amount;
     }
     data.total = Utils.calcTotal(total);
     return found ? 1 : 0;
@@ -113,18 +122,17 @@ const ops = {
     const amountAst = args[0];
     let found = false, total = 0;
     for (p of data.items) {
-      p.amount = Utils.calcNumber(amountAst, p.amount)
-      total += p.amount;
+      p.price.amount = Utils.calcNumber(amountAst, p.price.amount)
+      total += p.price.amount;
     }
     data.total = Utils.calcTotal(total);
     return 1;
   } },
   // cart_add_item(pricingId: Str) async
   cart_add_item: { num: 1, eval: async (args, data) => {
-    /* TODO: ACHTUNG: Query database */
-    data.items.push({
-      id: String(args[0].val)
-    });
+    data.items.push(await CustomFunctions.getItem(
+      { id: String(args[0].val) }
+    ));
     return 1;
   } },
   // cart_set_total(amount: Num;NumPercent)
@@ -133,13 +141,17 @@ const ops = {
     data.total = Utils.calcTotal(Utils.calcNumber(amountAst, data.total));
     return 1;
   } },
+  // cart_get_total() -> Num
+  cart_get_total: { num: 0, eval: (args, data) => {
+    return data.total;
+  } },
   // cart_add_discount(amount: Num)
   cart_add_discount: { num: 1, eval: (args, data) => {
     const amount = args[0].val;
     data.discount += Utils.calcTotal(amount);
     return 1;
   } }
-  
+
   /* TODO: Possible future functions */
   // cart_has_promo(promoName:Str)
   // cart_has_coupon(couponId:Str)
@@ -173,12 +185,12 @@ const parse = tokens => {
 
   const parseOp = () => {
     const node = { val: consume(), type: Op, expr: [] };
-    
+
     // Check for valid operator
     if (!ops[node.val]) {
       throw new ASDFSyntaxError(`${node.val} is not a valid operator`);
     }
-    
+
     const numOperands = ops[node.val].num;
     const endOperator = ops[node.val].end;
     const conditional = ops[node.val].conditional;
@@ -233,7 +245,7 @@ const parse = tokens => {
       return parseOp();
     }
   };
-  
+
   // Always evaluate input as code block so multiple expressions at top level are supported
   const node = { val: '{', type: Op, expr: [] };
   while (peek()) {
@@ -249,7 +261,7 @@ const parse = tokens => {
   The Evaluator is inherently asynchronous, so will wait for each (asynchronous) operand to finish before traversing.
 */
 const evaluate = async (ast, data) => {
-  //console.log("* " + JSON.stringify(ast));
+  // console.log("* " + JSON.stringify(ast));
 
   // Evaluate immediate values immediately
   if (ast.type === Num) {
@@ -261,10 +273,10 @@ const evaluate = async (ast, data) => {
   else if (ast.type == Str) {
     return ast;
   }
-  
+
   // Resolve expressions (children)
   const p = await Promise.all(ast.expr);
-  
+
   // Check for custom AST parse function
   if (ast.val && ops[ast.val].parse) {
     return await ops[ast.val].parse(p, ast, data);
@@ -323,7 +335,7 @@ class ASDFProgramError extends Error {
   Initiates the actual program parsing, lexing and evaluation.
 */
 class ASDFInterpreter {
-  static async run(input, program) {
+  static async run(input, program, functions) {
     // Validity checks
     if (!program) {
       throw new ASDFProgramError(`No valid program`);
@@ -331,13 +343,16 @@ class ASDFInterpreter {
     if (!input) {
       throw new ASDFProgramError(`No valid input`);
     }
-  
+
+    // Update CustomFunctions
+    CustomFunctions = functions;
+
     // Construct AST
     const ast = parse(lex(program));
-  
+
     // Copy input object to new data object that will be changed by evaluate
     let data = JSON.parse(JSON.stringify(input));
-  
+
     // Evaluate AST
     await evaluate(ast, data);
     return data;

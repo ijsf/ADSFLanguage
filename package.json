@@ -1,0 +1,12 @@
+{
+  "name": "asdflanguage",
+  "description": "",
+  "version": "1.0.0",
+  "dependencies": {},
+  "devDependencies": {},
+  "scripts": {
+    "build": "tsc --lib es2016,dom,es5 test.ts",
+    "start": "node test.js"
+  }
+}
+

@@ -123,7 +123,7 @@ const ops = {
   // cart_set_all_items_amount(amount: Num;NumPercent)
   cart_set_all_items_amount: { num: 1, eval: (args, data) => {
     const amountAst = args[0];
-    let found = false, total = 0;
+    let total = 0;
     for (let p of data.items) {
       p.price.amount = Utils.calcNumber(amountAst, p.price.amount)
       total += p.price.amount;

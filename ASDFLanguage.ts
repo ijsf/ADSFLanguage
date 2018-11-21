@@ -72,6 +72,10 @@ const ops = {
     }
   },
 
+  // Comment block instructions
+  '/*': { end: '*/', comment: true },
+  '*/': {},
+
   // Code block instructions
   '{': { end: '}' },
   '}': {},
@@ -172,7 +176,7 @@ const ops = {
   num := 0-9+
   numpercent := 0-9+%
   str := .*
-  op := add | sub | div | mul | if | { | } | ...
+  op := add | sub | div | mul | if | { | } | \/\* | \*\/ | ...
   expr := num | numpercent | 'str' | op expr+
   ```
 */
@@ -197,6 +201,7 @@ const parse = tokens => {
     const numOperands = ops[node.val].num;
     const endOperator = ops[node.val].end;
     const conditional = ops[node.val].conditional;
+    const isComment = ops[node.val].comment ? true : false;
 
     // Consume tokens depending on operator configuration
     if (numOperands) {
@@ -216,8 +221,15 @@ const parse = tokens => {
         if (!peek()) {
           throw new ASDFSyntaxError(`${node.val} requires closing operator ${endOperator}`);
         }
-        // Parse operand
-        node.expr.push(parseExpr());
+        // Check if operator is a comment
+        if (isComment) {
+          // Just consume this token (does not parse at all)
+          consume();
+        }
+        else {
+          // Parse this token and add as child
+          node.expr.push(parseExpr());
+        }
       }
       // Consume end operator
       parseExpr();

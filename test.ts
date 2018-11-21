@@ -40,8 +40,15 @@ import { ASDFSyntaxError, ASDFInternalError, ASDFProgramError } from './ASDFLang
     // ASDF program source
     const source = `
 if >= cart_count_items 3 {
+  /*
+    test
+  */
   cart_add_item 'test'
+  /* test */
   cart_set_all_items_amount 1
+  /*
+    test
+  */
 }
 `;
 

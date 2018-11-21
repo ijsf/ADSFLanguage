@@ -277,16 +277,22 @@ const evaluate = async (ast, data) => {
     return ast;
   }
 
-  // Resolve expressions (children)
-  const p = await Promise.all(ast.expr);
+  // Resolve expressions (children) sequentially after one another
+  let children = [];
+  for (const e of ast.expr) {
+    children.push(await e);
+  }
 
   // Check for custom AST parse function
   if (ast.val && ops[ast.val].parse) {
-    return await ops[ast.val].parse(p, ast, data);
+    return await ops[ast.val].parse(children, ast, data);
   }
   else {
-    // Use standard recursive AST evaluation
-    const q = await Promise.all(p.map((p) => evaluate(p, data)));
+    // Use standard recursive AST evaluation, resolve all (asynchronous) ASTs sequentially after one another
+    let q = [];
+    for (const p of children) {
+      q.push(await evaluate(p, data));
+    }
     // If operation is defined
     if (ast.val && ops[ast.val].eval) {
       // Parse expression, resolve Promise

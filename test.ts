@@ -40,16 +40,34 @@ import { ASDFSyntaxError, ASDFInternalError, ASDFProgramError } from './ASDFLang
     // ASDF program source
     const source = `
 if >= cart_count_items 3 {
-  cart_add_discount cart_get_item_amount 'compressor'
+  cart_add_item 'test'
+  cart_set_all_items_amount 1
 }
 `;
 
+    // Async timer test logic
+    let timeout = (ms) => {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    };
+
     // Run the actual program on the input data
     const output = await ASDFInterpreter.run(input, source, {
+      getItem: async ({ id }) => {
+        console.log('getItem start timer');
+        await timeout(1000);
+        console.log('getItem executed timer');
+        return {
+          id: 'test',
+          price: {
+            id: 'test',
+            amount: 999
+          }
+        };
+      }
     });
     
     // Log the output
-    console.log(output);
+    console.log(JSON.stringify(output));
   }
   catch (e) {
     console.error(e);

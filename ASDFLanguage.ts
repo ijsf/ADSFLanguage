@@ -403,6 +403,17 @@ const evaluate = async (ast, data) => {
   else if (ast.type == CartItems) {
     return ast;
   }
+  else if (ast.type == Var) {
+    // This must be a variable (or an invalid token), so try to see if it is indeed set in vars memory
+    if (String(ast.val) in data.vars) {
+      // The AST is stored in vars memory, so retrieve its value which must've been evaluated at this point
+      return data.vars[ast.val].val;
+    }
+    else {
+      // No such variable
+      throw new ASDFProgramError(`Unknown variable or operation ${ast.val}`);
+    }
+  }
 
   // Resolve expressions (children) sequentially after one another
   let children = [];

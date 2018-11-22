@@ -64,6 +64,7 @@ cart_set_total cart_calculate_total
     */
     const source = `
 set foundItems cart_find_items [ 'bitcrusher' 'noize' 'transient' 'nogwat' 'nogietswatnietbestaat', 'bassxl' ]
+foundItems
     `;
 
     // Async timer test logic

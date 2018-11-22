@@ -32,24 +32,28 @@ import { ASDFSyntaxError, ASDFInternalError, ASDFProgramError } from './ASDFLang
             amount: 15.00
           }
         },
+        {
+          id: 4,
+          price: {
+            id: 'bassxl',
+            amount: 35.00
+          }
+        },
+        {
+          id: 5,
+          price: {
+            id: 'transient',
+            amount: 15.00
+          }
+        },
       ],
-      total: 45,
+      total: 95,
       discount: 0
     };
 
     // ASDF program source
     const source = `
-if >= cart_count_items 3 {
-  /*
-    test
-  */
-  cart_add_item 'test'
-  /* test */
-  cart_set_all_items_amount 1
-  /*
-    test
-  */
-}
+cart_discount_items [ 'bitcrusher' 'noize' 'transient' 'nogwat' 'nogietswatnietbestaat', 'bassxl' ] 3
 `;
 
     // Async timer test logic

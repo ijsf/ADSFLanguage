@@ -1,3 +1,11 @@
+/**
+ * ASDFLanguage
+ *
+ * TODOs
+ *
+ * * Catch invalid tokens, e.g. with commas [ 'test', 'test' ], and error out instead of parsing them.
+ */
+
 /*
   Lexer
 
@@ -23,6 +31,7 @@ const Op = Symbol('op');
 const Num = Symbol('num');
 const NumPercent = Symbol('numpercent');
 const Str = Symbol('str');
+const Array = Symbol('array');
 
 const ConditionalOp = Symbol('conditionalop');
 const IfBodyOp = Symbol('ifbodyop');
@@ -37,7 +46,9 @@ const Utils = {
   // Convert from JS to Num type
   JStoNum: (x) => ({ val: Number(x), type: Num }),
   // Convert from JS to Str type
-  JStoStr: (x) => ({ val: String(x), type: Str })
+  JStoStr: (x) => ({ val: String(x), type: Str }),
+  // Convert from JS to Array type
+  JStoArray: (x) => ({ val: x, type: Array })
 };
 
 const ops = {
@@ -71,6 +82,10 @@ const ops = {
       }
     }
   },
+  
+  // Array instructions
+  '[': { end: ']', returnType: Array },
+  ']': {},
 
   // Comment block instructions
   '/*': { end: '*/', comment: true },
@@ -88,6 +103,24 @@ const ops = {
   '==': { num: 2, eval: (args) => args[0].val == args[1].val },
   '!=': { num: 2, eval: (args) => args[0].val != args[1].val },
 
+  // cart_discount_items(pricingIds: Array, maxDiscounts: Num) -> Num
+  cart_discount_items: { num: 2, eval: (args, data) => {
+    const pricingIds = args[0].val.map((x) => x.val); // Array AST to JS conversion
+    const maxDiscounts = args[1].val;
+    let currentDiscounts = 0;
+    for (let item of data.items) {
+      // Check if this item is eligible for discount
+      if (pricingIds.includes(item.price.id)) {
+        data.discount += item.price.amount;
+        ++currentDiscounts;
+      }
+      // If enough discounts have been given, stop
+      if (currentDiscounts >= maxDiscounts) {
+        break;
+      }
+    }
+    return currentDiscounts;
+  } },
   // cart_count_items() -> Num
   cart_count_items: { num: 0, eval: (args, data) => {
     return data.items.length;
@@ -188,7 +221,12 @@ const parse = tokens => {
 
   const parseNum = () => ({ val: Number(consume()), type: Num });
   const parseNumPercent = () => ({ val: Number(consume().slice(0, -1)), type: NumPercent });
-  const parseStr = () => ({ val: String(consume()).slice(1, -1), type: Str });
+  //const parseStr = () => ({ val: String(consume()).slice(1, -1), type: Str });
+  const parseStr = () => {
+    const c = consume();
+    console.log(c);
+    return ({ val: String(c).slice(1, -1), type: Str });
+  }
 
   const parseOp = () => {
     const node = { val: consume(), type: Op, expr: [] };
@@ -197,7 +235,7 @@ const parse = tokens => {
     if (!ops[node.val]) {
       throw new ASDFSyntaxError(`${node.val} is not a valid operator`);
     }
-
+    
     const numOperands = ops[node.val].num;
     const endOperator = ops[node.val].end;
     const conditional = ops[node.val].conditional;
@@ -278,7 +316,7 @@ const parse = tokens => {
 const evaluate = async (ast, data) => {
   // console.log("* " + JSON.stringify(ast));
 
-  // Evaluate immediate values immediately
+  // Evaluate immediate values immediately, return AST
   if (ast.type === Num) {
     return ast;
   }
@@ -313,9 +351,16 @@ const evaluate = async (ast, data) => {
       if (ast.returnType == Str) {
         return Utils.JStoStr(e);
       }
+      else if (ast.returnType == Array) {
+        return Utils.JStoArray(e);
+      }
       else {
         return Utils.JStoNum(e);
       }
+    }
+    else if (ast.val && ops[ast.val].returnType == Array) {
+      // No evaluation but returns an Array (e.g. for [ instruction)
+      return Utils.JStoArray(ast.expr);
     }
     else {
       // Return unmodified

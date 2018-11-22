@@ -428,6 +428,23 @@ export class ASDFInterpreter {
 
     // Evaluate AST
     await evaluate(ast, data);
+    
+    // Extra validity checks
+    {
+      // Ensure discount is a positive integer or 0
+      if (!(Number.isFinite(data.discount) && data.discount >= 0)) {
+        throw new ASDFProgramError(`Discount is not valid: ${data.discount}`);
+      }
+      // Ensure total is a positive integer or 0
+      if (!(Number.isFinite(data.total) && data.total >= 0)) {
+        throw new ASDFProgramError(`Total is not valid: ${data.total}`);
+      }
+      // Ensure discount is never greater than total
+      if (data.discount > data.total) {
+        throw new ASDFProgramError(`Discount (${data.discount}) is greater than total (${data.total})`);
+      }
+    }
+    
     return data;
   }
 }

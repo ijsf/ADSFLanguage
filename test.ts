@@ -52,18 +52,19 @@ import { ASDFSyntaxError, ASDFInternalError, ASDFProgramError } from './ASDFLang
     };
 
     // ASDF program source
+    /*
     const source = `
-/* should find: 'bitcrusher' 'noize' 'transient' with amount 10+10+10=30 */
 if cart_get_items_amount [ 'bitcrusher' 'noize' 'transient' 'nogwat' 'nogietswatnietbestaat', 'bassxl' ] 3 3 {
-  /* should add (10+10+10)-20=10 as discount */
   cart_add_discount sub cart_get_items_amount [ 'bitcrusher' 'noize' 'transient' 'nogwat' 'nogietswatnietbestaat', 'bassxl', 'compressor' ] 3 3 20
-  /* should add bassxl with amount 15 */
   cart_add_item 'bassxl'
-  /* should add 15 as discount = 25 */
   cart_add_discount cart_get_item_amount 'bassxl'
 }
 cart_set_total cart_calculate_total
 `;
+    */
+    const source = `
+cart_find_items [ 'bitcrusher' 'noize' 'transient' 'nogwat' 'nogietswatnietbestaat', 'bassxl' ]
+    `;
 
     // Async timer test logic
     let timeout = (ms) => {

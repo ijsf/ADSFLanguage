@@ -3,6 +3,7 @@
  *
  * TODOs
  *
+ * * CartItems array type: find, sort, slice
  * * Catch invalid tokens, e.g. with commas [ 'test', 'test' ], and error out instead of parsing them.
  * * Catch not enough arguments
  * * Parentheses
@@ -36,6 +37,7 @@ const Num = Symbol('num');
 const NumPercent = Symbol('numpercent');
 const Str = Symbol('str');
 const Array = Symbol('array');
+const CartItems = Symbol('cartitems');
 
 const ConditionalOp = Symbol('conditionalop');
 const IfBodyOp = Symbol('ifbodyop');
@@ -47,12 +49,46 @@ const Utils = {
   calcTotal: (x) => Utils.toFixedPrecision2(x),
   // Calculates a number based on the AST node (either Num or NumPercent)
   calcNumber: (ast, value) => ast.type == NumPercent ? (value * Number(ast.val) / 100) : Number(ast.val),
-  // Convert from JS to Num type
-  JStoNum: (x) => ({ val: Number(x), type: Num }),
-  // Convert from JS to Str type
-  JStoStr: (x) => ({ val: String(x), type: Str }),
-  // Convert from JS to Array type
-  JStoArray: (x) => ({ val: x, type: Array })
+
+  // Convert from JS to specific type
+  JStoType: (type, x) => {
+    if (type == Num) {
+      return { val: Number(x), type: Num };
+    }
+    else if (type == Str) {
+      return { val: String(x), type: Str };
+    }
+    else if (type == Array) {
+      return { val: x, type: Array };
+    }
+    else if (type == CartItems) {
+      return { val: x, type: CartItems };
+    }
+    else {
+      throw new ASDFInternalError(`Type ${type.toString()} could not be found`);
+    }
+  },
+  // Convert from specific type to JS
+  TypetoJS: (type, ast) => {
+    if (type != ast.type) {
+      throw new ASDFProgramError(`Expected type ${type.toString()} but got ${ast.type.toString()}`);
+    }
+    if (ast.type == Num) {
+      return ast.val;
+    }
+    else if (ast.type == Str) {
+      return ast.val;
+    }
+    else if (ast.type == Array) {
+      return ast.val.map((x) => x.val);
+    }
+    else if (ast.type == CartItems) {
+      return ast.val.map((x) => x.val);
+    }
+    else {
+      throw new ASDFInternalError(`Unknown type ${type.toString()}`);
+    }
+  }
 };
 
 const ops = {
@@ -107,6 +143,12 @@ const ops = {
   '==': { num: 2, eval: (args) => args[0].val == args[1].val },
   '!=': { num: 2, eval: (args) => args[0].val != args[1].val },
 
+  // cart_find_items(pricingIds: Array)
+  cart_find_items: { num: 1, returnType: CartItems, eval: (args, data) => {
+    const pricingIds = Utils.TypetoJS(Array, args[0]);
+    return data.items.filter((item) => pricingIds.includes(item.price.id));
+  } },
+
   // HACK
   // cart_get_items_amount(pricingIds: Array, minItemsToGet: Num, maxItemsToGet: Num) -> Num
   cart_get_items_amount: { num: 3, eval: (args, data) => {
@@ -159,7 +201,6 @@ const ops = {
       }
       total += p.price.amount;
     }
-    data.total = Utils.calcTotal(total);
     return found ? 1 : 0;
   } },
   // cart_set_all_items_amount(amount: Num;NumPercent)
@@ -170,7 +211,6 @@ const ops = {
       p.price.amount = Utils.calcNumber(amountAst, p.price.amount)
       total += p.price.amount;
     }
-    data.total = Utils.calcTotal(total);
     return 1;
   } },
   // cart_add_item(pricingId: Str) async
@@ -352,19 +392,16 @@ const evaluate = async (ast, data) => {
       // Parse expression, resolve Promise
       const e = await ops[ast.val].eval(q, data);
       // Convert to appropriate return type if specified, otherwise convert to Num by default
-      if (ast.returnType == Str) {
-        return Utils.JStoStr(e);
-      }
-      else if (ast.returnType == Array) {
-        return Utils.JStoArray(e);
+      if (ast.returnType) {
+        return Utils.JStoType(ast.returnType, e);
       }
       else {
-        return Utils.JStoNum(e);
+        return Utils.JStoType(Num, e);
       }
     }
-    else if (ast.val && ops[ast.val].returnType == Array) {
-      // No evaluation but returns an Array (e.g. for [ instruction)
-      return Utils.JStoArray(ast.expr);
+    else if (ast.val && ops[ast.val].returnType) {
+      // No evaluation but return type expected, so do conversion using children
+      return Utils.JStoType(ops[ast.val].returnType, ast.expr);
     }
     else {
       // Return unmodified

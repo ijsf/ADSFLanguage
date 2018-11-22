@@ -53,7 +53,7 @@ import { ASDFSyntaxError, ASDFInternalError, ASDFProgramError } from './ASDFLang
 
     // ASDF program source
     const source = `
-cart_discount_items [ 'bitcrusher' 'noize' 'transient' 'nogwat' 'nogietswatnietbestaat', 'bassxl' ] 3
+cart_discount_items [ 'bitcrusher' 'noize' 'transient' 'nogwat' 'nogietswatnietbestaat', 'bassxl' ] 3 3
 `;
 
     // Async timer test logic

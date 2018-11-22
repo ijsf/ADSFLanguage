@@ -103,15 +103,16 @@ const ops = {
   '==': { num: 2, eval: (args) => args[0].val == args[1].val },
   '!=': { num: 2, eval: (args) => args[0].val != args[1].val },
 
-  // cart_discount_items(pricingIds: Array, maxDiscounts: Num) -> Num
-  cart_discount_items: { num: 2, eval: (args, data) => {
+  // cart_discount_items(pricingIds: Array, minDiscounts: Num, maxDiscounts: Num) -> Num
+  cart_discount_items: { num: 3, eval: (args, data) => {
     const pricingIds = args[0].val.map((x) => x.val); // Array AST to JS conversion
-    const maxDiscounts = args[1].val;
-    let currentDiscounts = 0;
+    const minDiscounts = args[1].val;
+    const maxDiscounts = args[2].val;
+    let currentDiscounts = 0, totalDiscountAmount = 0;
     for (let item of data.items) {
       // Check if this item is eligible for discount
       if (pricingIds.includes(item.price.id)) {
-        data.discount += item.price.amount;
+        totalDiscountAmount += item.price.amount;
         ++currentDiscounts;
       }
       // If enough discounts have been given, stop
@@ -119,7 +120,14 @@ const ops = {
         break;
       }
     }
-    return currentDiscounts;
+    // Check if minimum number of discounts has been reached
+    if (currentDiscounts >= minDiscounts) {
+      // Apply discount
+      data.discount = totalDiscountAmount;
+      return 1;
+    }
+    // Don't apply any discount
+    return 0;
   } },
   // cart_count_items() -> Num
   cart_count_items: { num: 0, eval: (args, data) => {

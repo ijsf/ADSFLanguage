@@ -35,7 +35,7 @@ import { ASDFSyntaxError, ASDFInternalError, ASDFProgramError } from './ASDFLang
         {
           id: 4,
           price: {
-            id: 'bassxl',
+            id: 'wtvr',
             amount: 35.00
           }
         },
@@ -53,7 +53,11 @@ import { ASDFSyntaxError, ASDFInternalError, ASDFProgramError } from './ASDFLang
 
     // ASDF program source
     const source = `
-cart_discount_items [ 'bitcrusher' 'noize' 'transient' 'nogwat' 'nogietswatnietbestaat', 'bassxl' ] 3 3
+if cart_get_items_amount [ 'bitcrusher' 'noize' 'transient' 'nogwat' 'nogietswatnietbestaat', 'bassxl' ] 3 {
+  cart_add_discount cart_get_items_amount [ 'bitcrusher' 'noize' 'transient' 'nogwat' 'nogietswatnietbestaat', 'bassxl' ] 3
+  cart_add_item 'bassxl'
+  cart_add_discount cart_get_item_amount 'bassxl'
+}
 `;
 
     // Async timer test logic
@@ -68,10 +72,10 @@ cart_discount_items [ 'bitcrusher' 'noize' 'transient' 'nogwat' 'nogietswatnietb
         await timeout(1000);
         console.log('getItem executed timer');
         return {
-          id: 'test',
+          id: 9999,
           price: {
-            id: 'test',
-            amount: 999
+            id: 'bassxl',
+            amount: 30
           }
         };
       }

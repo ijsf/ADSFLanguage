@@ -103,30 +103,17 @@ const ops = {
   '==': { num: 2, eval: (args) => args[0].val == args[1].val },
   '!=': { num: 2, eval: (args) => args[0].val != args[1].val },
 
-  // cart_discount_items(pricingIds: Array, minDiscounts: Num, maxDiscounts: Num) -> Num
-  cart_discount_items: { num: 3, eval: (args, data) => {
+  // HACK
+  // cart_get_items_amount(pricingIds: Array, minItemsToGet: Num) -> Num
+  cart_get_items_amount: { num: 2, eval: (args, data) => {
     const pricingIds = args[0].val.map((x) => x.val); // Array AST to JS conversion
-    const minDiscounts = args[1].val;
-    const maxDiscounts = args[2].val;
-    let currentDiscounts = 0, totalDiscountAmount = 0;
-    for (let item of data.items) {
-      // Check if this item is eligible for discount
-      if (pricingIds.includes(item.price.id)) {
-        totalDiscountAmount += item.price.amount;
-        ++currentDiscounts;
-      }
-      // If enough discounts have been given, stop
-      if (currentDiscounts >= maxDiscounts) {
-        break;
-      }
+    const minItemsToGet = args[1].val;
+    let foundItems = data.items.filter((item) => pricingIds.includes(item.price.id));
+    if (foundItems.length >= minItemsToGet) {
+      console.log(foundItems.reduce((amount, item) => amount + item.price.amount, 0));
+      return foundItems.reduce((amount, item) => amount + item.price.amount, 0);
     }
-    // Check if minimum number of discounts has been reached
-    if (currentDiscounts >= minDiscounts) {
-      // Apply discount
-      data.discount = totalDiscountAmount;
-      return 1;
-    }
-    // Don't apply any discount
+    // Not enough items found, no summed amount
     return 0;
   } },
   // cart_count_items() -> Num
@@ -232,7 +219,6 @@ const parse = tokens => {
   //const parseStr = () => ({ val: String(consume()).slice(1, -1), type: Str });
   const parseStr = () => {
     const c = consume();
-    console.log(c);
     return ({ val: String(c).slice(1, -1), type: Str });
   }
 

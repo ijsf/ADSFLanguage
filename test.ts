@@ -63,7 +63,7 @@ cart_set_total cart_calculate_total
 `;
     */
     const source = `
-cart_find_items [ 'bitcrusher' 'noize' 'transient' 'nogwat' 'nogietswatnietbestaat', 'bassxl' ]
+set foundItems cart_find_items [ 'bitcrusher' 'noize' 'transient' 'nogwat' 'nogietswatnietbestaat', 'bassxl' ]
     `;
 
     // Async timer test logic

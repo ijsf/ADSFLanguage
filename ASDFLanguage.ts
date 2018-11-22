@@ -33,12 +33,16 @@ let CustomFunctions = {
   All operators symbols and tables are defined here.
 */
 const Op = Symbol('op');
+const Array = Symbol('array');
+const Var = Symbol('var');
+
+// Immediate operators (cannot contain any children ASTs)
 const Num = Symbol('num');
 const NumPercent = Symbol('numpercent');
 const Str = Symbol('str');
-const Array = Symbol('array');
 const CartItems = Symbol('cartitems');
 
+// Internal parse/eval only (non-specifiable) operators
 const ConditionalOp = Symbol('conditionalop');
 const IfBodyOp = Symbol('ifbodyop');
 
@@ -65,7 +69,7 @@ const Utils = {
       return { val: x, type: CartItems };
     }
     else {
-      throw new ASDFInternalError(`Type ${type.toString()} could not be found`);
+      throw new ASDFInternalError(`Type ${type ? type.toString() : type} could not be found`);
     }
   },
   // Convert from specific type to JS
@@ -123,6 +127,23 @@ const ops = {
     }
   },
   
+  // Variable assignment instructions
+  set: { num: 2, parse: async (p, ast, data) => {
+    // Internal AST validity check (debugging)
+    if (!(p.length >= 2 && p[0].type == Var)) {
+      throw new ASDFProgramError(`set is trying to set a wrong type ${p[0].type.toString()}`);
+    }
+    const varName = p[0].val; // Var
+    const varValueExpr = p[1];
+    
+    // Evaluate value expression
+    const varValue = await evaluate(varValueExpr, data);
+    
+    // Assign to var in vars memory
+    data.vars[varName] = varValue;
+    return varValue;
+  } },
+  
   // Array instructions
   '[': { end: ']', returnType: Array },
   ']': {},
@@ -143,7 +164,7 @@ const ops = {
   '==': { num: 2, eval: (args) => args[0].val == args[1].val },
   '!=': { num: 2, eval: (args) => args[0].val != args[1].val },
 
-  // cart_find_items(pricingIds: Array)
+  // cart_find_items(pricingIds: Array) -> CartItems
   cart_find_items: { num: 1, returnType: CartItems, eval: (args, data) => {
     const pricingIds = Utils.TypetoJS(Array, args[0]);
     return data.items.filter((item) => pricingIds.includes(item.price.id));
@@ -272,6 +293,10 @@ const parse = tokens => {
     return ({ val: String(c).slice(1, -1), type: Str });
   }
 
+  const parseVar = () => {
+    return { val: consume(), type: Var };
+  }
+
   const parseOp = () => {
     const node = { val: consume(), type: Op, expr: [] };
 
@@ -338,8 +363,13 @@ const parse = tokens => {
     else if (/'.*'/.test(peek())) {
       return parseStr();
     }
-    else {
+    else if (ops[peek()]) {
       return parseOp();
+    }
+    else {
+      // Must be a variable
+      // If it is not, evaluate will throw an error
+      return parseVar();
     }
   };
 
@@ -370,6 +400,9 @@ const evaluate = async (ast, data) => {
   else if (ast.type == Str) {
     return ast;
   }
+  else if (ast.type == CartItems) {
+    return ast;
+  }
 
   // Resolve expressions (children) sequentially after one another
   let children = [];
@@ -392,8 +425,8 @@ const evaluate = async (ast, data) => {
       // Parse expression, resolve Promise
       const e = await ops[ast.val].eval(q, data);
       // Convert to appropriate return type if specified, otherwise convert to Num by default
-      if (ast.returnType) {
-        return Utils.JStoType(ast.returnType, e);
+      if (ops[ast.val].returnType) {
+        return Utils.JStoType(ops[ast.val].returnType, e);
       }
       else {
         return Utils.JStoType(Num, e);
@@ -462,6 +495,9 @@ export class ASDFInterpreter {
 
     // Copy input object to new data object that will be changed by evaluate
     let data = JSON.parse(JSON.stringify(input));
+
+    // Prepare variable memory (stores ASTs of values)
+    data.vars = {};
 
     // Evaluate AST
     await evaluate(ast, data);

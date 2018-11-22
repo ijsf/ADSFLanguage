@@ -15,49 +15,54 @@ import { ASDFSyntaxError, ASDFInternalError, ASDFProgramError } from './ASDFLang
           id: 1,
           price: {
             id: 'compressor',
-            amount: 15.00
+            amount: 10
           }
         },
         {
           id: 2,
           price: {
             id: 'bitcrusher',
-            amount: 15.00
+            amount: 10
           }
         },
         {
           id: 3,
           price: {
             id: 'noize',
-            amount: 15.00
+            amount: 10
           }
         },
         {
           id: 4,
           price: {
             id: 'wtvr',
-            amount: 35.00
+            amount: 10
           }
         },
         {
           id: 5,
           price: {
             id: 'transient',
-            amount: 15.00
+            amount: 10
           }
         },
       ],
-      total: 95,
+      total: 0,
       discount: 0
     };
 
     // ASDF program source
     const source = `
-if cart_get_items_amount [ 'bitcrusher' 'noize' 'transient' 'nogwat' 'nogietswatnietbestaat', 'bassxl' ] 3 {
-  cart_add_discount cart_get_items_amount [ 'bitcrusher' 'noize' 'transient' 'nogwat' 'nogietswatnietbestaat', 'bassxl' ] 3
+/* should find: 'bitcrusher' 'noize' 'transient' with amount 10+10+10=30 */
+if cart_get_items_amount [ 'bitcrusher' 'noize' 'transient' 'nogwat' 'nogietswatnietbestaat', 'bassxl' ] 3 3 {
+  /* should add (10+10+10)-20=10 as discount */
+  cart_add_discount sub cart_get_items_amount [ 'bitcrusher' 'noize' 'transient' 'nogwat' 'nogietswatnietbestaat', 'bassxl', 'compressor' ] 3 3 20
+  /* should add bassxl with amount 15 */
   cart_add_item 'bassxl'
+  /* should add 15 as discount = 25 */
   cart_add_discount cart_get_item_amount 'bassxl'
 }
+cart_set_total cart_calculate_total
 `;
 
     // Async timer test logic
@@ -75,7 +80,7 @@ if cart_get_items_amount [ 'bitcrusher' 'noize' 'transient' 'nogwat' 'nogietswat
           id: 9999,
           price: {
             id: 'bassxl',
-            amount: 30
+            amount: 15
           }
         };
       }

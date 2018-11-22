@@ -4,6 +4,10 @@
  * TODOs
  *
  * * Catch invalid tokens, e.g. with commas [ 'test', 'test' ], and error out instead of parsing them.
+ * * Catch not enough arguments
+ * * Parentheses
+ * * Variable assignment
+ * * Infix
  */
 
 /*
@@ -104,17 +108,23 @@ const ops = {
   '!=': { num: 2, eval: (args) => args[0].val != args[1].val },
 
   // HACK
-  // cart_get_items_amount(pricingIds: Array, minItemsToGet: Num) -> Num
-  cart_get_items_amount: { num: 2, eval: (args, data) => {
+  // cart_get_items_amount(pricingIds: Array, minItemsToGet: Num, maxItemsToGet: Num) -> Num
+  cart_get_items_amount: { num: 3, eval: (args, data) => {
     const pricingIds = args[0].val.map((x) => x.val); // Array AST to JS conversion
     const minItemsToGet = args[1].val;
+    const maxItemsToGet = args[2].val;
+    // Find all matching items
     let foundItems = data.items.filter((item) => pricingIds.includes(item.price.id));
     if (foundItems.length >= minItemsToGet) {
-      console.log(foundItems.reduce((amount, item) => amount + item.price.amount, 0));
-      return foundItems.reduce((amount, item) => amount + item.price.amount, 0);
+      // Just use the first N items, forget about the rest (HACK: will cause problems with items that have differing prices!)
+      return foundItems.slice(0, maxItemsToGet).reduce((amount, item) => amount + item.price.amount, 0);
     }
     // Not enough items found, no summed amount
     return 0;
+  } },
+  // cart_calculate_total() -> Num
+  cart_calculate_total: { num: 0, eval: (args, data) => {
+    return data.items.reduce((amount, item) => amount + item.price.amount, 0);
   } },
   // cart_count_items() -> Num
   cart_count_items: { num: 0, eval: (args, data) => {

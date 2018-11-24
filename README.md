@@ -14,7 +14,9 @@ Running the test application:
 yarn start
 ```
 
-Example ASDF code:
+## Example cases
+
+Black Friday discount:
 
 ```
 /* Find any matching products */
@@ -40,4 +42,40 @@ if >= count foundItems 3 {
   /* Set 0 price amount for "free" item */
   cart_set_item_amount 'bassxl' 0
 }
+```
+
+## Technical details
+
+Features:
+
+* Lisp-like language -- prefix notation.
+* Asynchronous instructions -- Promise based to support async database queries, etc.
+* Comment blocks ```/* ... */```.
+* If conditional expressions.
+* Num type 
+* TypeScript interpreter.
+
+Missing functionality:
+
+* Catch invalid tokens, e.g. with commas [ 'test', 'test' ], and error out instead of parsing them.
+* Catch not enough arguments.
+* Multiple #arguments for same instruction.
+* Parentheses (argument stack/queue).
+* Infix? (argument stack/queue).
+
+Grammar:
+
+```
+  Modified EBNF grammar using regex (denoted by _).
+
+  num := _0-9+_
+  numpercent := _0-9+_%
+  str := '_.*_'
+  array := [ expr ]
+
+  comment := /* _.*_ */
+  var := _.*_
+  identifier := ops | if | { | } | comment | var
+
+  expr := num | numpercent | array | str | identifier expr+
 ```

@@ -142,19 +142,19 @@ const ops = {
   set: { num: 2,
     // Custom walk function to evaluate and set variables in memory
     walk: async (p, ast, data) => {
-    // Internal AST validity check (debugging)
-    if (!(p.length >= 2 && p[0].type == Var)) {
-      throw new ASDFProgramError(`set is trying to set a wrong type ${p[0].type.toString()}`);
-    }
-    const varName = p[0].val; // Var
-    const varValueExpr = p[1];
+      // Internal AST validity check (debugging)
+      if (!(p.length >= 2 && p[0].type == Var)) {
+        throw new ASDFProgramError(`set is trying to set a wrong type ${p[0].type.toString()}`);
+      }
+      const varName = p[0].val; // Var
+      const varValueExpr = p[1];
     
-    // Evaluate value expression
-    const varValue = await evaluate(varValueExpr, data);
+      // Evaluate value expression
+      const varValue = await evaluate(varValueExpr, data);
     
-    // Assign to var in vars memory
-    data.vars[varName] = varValue;
-    return varValue;
+      // Assign to var in vars memory
+      data.vars[varName] = varValue;
+      return varValue;
   } },
   
   // Array instructions

@@ -184,7 +184,6 @@ const ops = {
     const inputAst = args[0];
     const begin = Number(Utils.TypetoJS(Num, args[1]));
     const end = Number(Utils.TypetoJS(Num, args[2]));
-    let input;
     if (inputAst.type == Array) {
       return Utils.JStoType(Array, Utils.TypetoJS(Array, inputAst).slice(begin, end));
     }

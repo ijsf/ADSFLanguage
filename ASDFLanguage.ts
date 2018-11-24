@@ -51,8 +51,6 @@ const Utils = {
   toFixedPrecision2: (x) => Number(x.toFixed(2)),
   // Calculates a total amount properly
   calcTotal: (x) => Utils.toFixedPrecision2(x),
-  // Calculates a number based on the AST node (either Num or NumPercent)
-  calcNumber: (ast, value) => ast.type == NumPercent ? (value * Number(ast.val) / 100) : Number(ast.val),
 
   // Convert from JS to specific type
   JStoType: (type, x) => {
@@ -267,11 +265,14 @@ const ops = {
   // cart_set_item_amount(pricingId: Str, amount: Num|NumPercent)
   cart_set_item_amount: { num: 2, eval: (args, data) => {
     const pricingId = args[0].val;
-    const amountAst = args[1];
+    const amount = Utils.TypetoJS(Num, args[1], true), amountPercent = Utils.TypetoJS(NumPercent, args[1], true);
+    if (amount == null && amountPercent == null) {
+      throw new ASDFProgramError(`cart_set_item_amount expected Num or NumPercent`);
+    }
     let found = false, total = 0;
     for (let p of data.items) {
       if (p.price.id == args[0].val) {
-        p.price.amount = Utils.calcNumber(amountAst, p.price.amount)
+        p.price.amount = amount ? amount : (amountPercent * p.price.amount)
         found = true;
       }
       if (!Number.isFinite(p.price.amount)) {
@@ -283,10 +284,13 @@ const ops = {
   } },
   // cart_set_all_items_amount(amount: Num|NumPercent)
   cart_set_all_items_amount: { num: 1, eval: (args, data) => {
-    const amountAst = args[0];
+    const amount = Utils.TypetoJS(Num, args[0], true), amountPercent = Utils.TypetoJS(NumPercent, args[0], true);
+    if (amount == null && amountPercent == null) {
+      throw new ASDFProgramError(`cart_set_all_items_amount expected Num or NumPercent`);
+    }
     let total = 0;
     for (let p of data.items) {
-      p.price.amount = Utils.calcNumber(amountAst, p.price.amount)
+      p.price.amount = amount ? amount : (amountPercent * p.price.amount)
       total += p.price.amount;
     }
     return Utils.JStoType(Num, 1);
@@ -300,8 +304,11 @@ const ops = {
   } },
   // cart_set_total(amount: Num|NumPercent) -> Num
   cart_set_total: { num: 1, eval: (args, data) => {
-    const amountAst = args[0];
-    data.total = Utils.calcTotal(Utils.calcNumber(amountAst, data.total));
+    const amount = Utils.TypetoJS(Num, args[0], true), amountPercent = Utils.TypetoJS(NumPercent, args[0], true);
+    if (amount == null && amountPercent == null) {
+      throw new ASDFProgramError(`cart_set_total expected Num or NumPercent`);
+    }
+    data.total = Utils.calcTotal(amount ? amount : (amountPercent * data.total));
     return Utils.JStoType(Num, data.total);
   } },
   // cart_get_total() -> Num

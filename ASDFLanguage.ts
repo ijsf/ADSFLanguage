@@ -211,7 +211,8 @@ const ops = {
   // cart_find_items(pricingIds: array) -> cartitems
   cart_find_items: { num: 1, eval: (args, data) => {
     // NOTE: This function will return actual referenced data.items, and no copies!
-    // This means that any future instructions that modify any item contents will automatically update data.items itself!
+    // This means that we have to be careful with any cartitems instructions.
+    // These should NOT modify any item contents, or else this will automatically update data.items itself!
     const pricingIds = Utils.TypetoJS(ASDF.array, args[0]);
     return Utils.JStoType(ASDF.cartitems, data.items.filter((item) => pricingIds.includes(item.price.id)));
   } },

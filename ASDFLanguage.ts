@@ -174,13 +174,11 @@ const ops = {
     const inputAst = args[0];
     const begin = Number(Utils.TypetoJS(Num, args[1]));
     const end = Number(Utils.TypetoJS(Num, args[2]));
-    console.log(inputAst);
     let input;
     if (inputAst.type == Array) {
       return Utils.JStoType(Array, Utils.TypetoJS(Array, inputAst).slice(begin, end));
     }
     else if (inputAst.type == CartItems) {
-      console.log(Utils.JStoType(CartItems, Utils.TypetoJS(CartItems, inputAst).slice(begin, end)));
       return Utils.JStoType(CartItems, Utils.TypetoJS(CartItems, inputAst).slice(begin, end));
     }
     else {
@@ -458,9 +456,6 @@ const evaluate = async (ast, data) => {
     for (const p of ast.expr) {
       q.push(await evaluate(p, data));
     }
-    console.log('val',ast.val);
-    console.log('expr',ast.expr);
-    console.log('q',q);
     // If operation is defined
     if (ast.val && ops[ast.val].eval) {
       // Parse expression, resolve Promise

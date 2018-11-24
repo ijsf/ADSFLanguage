@@ -35,7 +35,7 @@ import { ASDFSyntaxError, ASDFInternalError, ASDFProgramError } from './ASDFLang
         {
           id: 4,
           price: {
-            id: 'wtvr',
+            id: 'nogwat',
             amount: 2
           }
         },
@@ -63,9 +63,8 @@ cart_set_total cart_calculate_total
 `;
     */
     const source = `
-set foundItems cart_find_items [ add 1 1 'noize' 'transient' 'nogwat' 'nogietswatnietbestaat', 'bassxl' ]
-set foundItems cartitems_sort_by_amount foundItems
-set foundItems slice foundItems 0 1
+set foundItems cart_find_items [ 'compressor' 'noize' 'transient' 'nogwat' 'nogietswatnietbestaat', 'bassxl' ]
+set foundItems slice cartitems_sort_by_amount foundItems 0 3
     `;
 
     // Async timer test logic

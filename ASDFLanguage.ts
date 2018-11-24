@@ -195,6 +195,19 @@ const ops = {
       throw new ASDFProgramError(`slice expects Array or CartItems type`);
     }
   } },
+  // count(input: Array|CartItems) -> Num
+  count: { num: 1, eval: (args) => {
+    const inputAst = args[0];
+    if (inputAst.type == Array) {
+      return Utils.JStoType(Num, Utils.TypetoJS(Array, inputAst).length);
+    }
+    else if (inputAst.type == CartItems) {
+      return Utils.JStoType(Num, Utils.TypetoJS(CartItems, inputAst).length);
+    }
+    else {
+      throw new ASDFProgramError(`count expects Array or CartItems type`);
+    }
+  } },
 
   // cart_find_items(pricingIds: Array) -> CartItems
   cart_find_items: { num: 1, eval: (args, data) => {

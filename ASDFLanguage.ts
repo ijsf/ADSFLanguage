@@ -200,6 +200,8 @@ const ops = {
 
   // cart_find_items(pricingIds: Array) -> CartItems
   cart_find_items: { num: 1, eval: (args, data) => {
+    // NOTE: This function will return actual referenced data.items, and no copies!
+    // This means that any future instructions that modify any item contents will automatically update data.items itself!
     const pricingIds = Utils.TypetoJS(Array, args[0]);
     return Utils.JStoType(CartItems, data.items.filter((item) => pricingIds.includes(item.price.id)));
   } },
@@ -209,7 +211,7 @@ const ops = {
     items.sort((a, b) => a.price.amount - b.price.amount);
     return Utils.JStoType(CartItems, items);
   } },
-  // cartitems_set_amount(items: CartItems, amount: Num;NumPercent) -> CartItems
+  // cartitems_set_amount(items: CartItems, amount: Num|NumPercent) -> CartItems
   cartitems_set_amount: { num: 2, eval: (args) => {
     const items = Utils.TypetoJS(CartItems, args[0]);
     const amount = Utils.TypetoJS(Num, args[1], true), amountPercent = Utils.TypetoJS(NumPercent, args[1], true);
@@ -262,7 +264,7 @@ const ops = {
     }
     return Utils.JStoType(Num, item[0].price.amount);
   } },
-  // cart_set_item_amount(pricingId: Str, amount: Num;NumPercent)
+  // cart_set_item_amount(pricingId: Str, amount: Num|NumPercent)
   cart_set_item_amount: { num: 2, eval: (args, data) => {
     const pricingId = args[0].val;
     const amountAst = args[1];
@@ -279,7 +281,7 @@ const ops = {
     }
     return Utils.JStoType(Num, found ? 1 : 0);
   } },
-  // cart_set_all_items_amount(amount: Num;NumPercent)
+  // cart_set_all_items_amount(amount: Num|NumPercent)
   cart_set_all_items_amount: { num: 1, eval: (args, data) => {
     const amountAst = args[0];
     let total = 0;
@@ -296,7 +298,7 @@ const ops = {
     ));
     return Utils.JStoType(Num, 1);
   } },
-  // cart_set_total(amount: Num;NumPercent) -> Num
+  // cart_set_total(amount: Num|NumPercent) -> Num
   cart_set_total: { num: 1, eval: (args, data) => {
     const amountAst = args[0];
     data.total = Utils.calcTotal(Utils.calcNumber(amountAst, data.total));

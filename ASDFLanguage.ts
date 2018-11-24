@@ -78,10 +78,10 @@ const Utils = {
       throw new ASDFProgramError(`Expected type ${type.toString()} but got ${ast.type.toString()}`);
     }
     if (ast.type == Num) {
-      return ast.val;
+      return Number(ast.val);
     }
     else if (ast.type == Str) {
-      return ast.val;
+      return String(ast.val);
     }
     else if (ast.type == Array) {
       return ast.val.map((x) => x.val);

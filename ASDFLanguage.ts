@@ -96,10 +96,10 @@ const Utils = {
 };
 
 const ops = {
-  add:  { num: 2, eval: args => args.reduce((a, b) => Number(a.val) + Number(b.val), 0) },
-  sub:  { num: 2, eval: args => args.reduce((a, b) => Number(a.val) - Number(b.val)) },
-  div:  { num: 2, eval: args => args.reduce((a, b) => Number(a.val) / Number(b.val)) },
-  mul:  { num: 2, eval: args => args.reduce((a, b) => Number(a.val) * Number(b.val), 1) },
+  add:  { num: 2, eval: args => Utils.TypetoJS(Num, args[0]) + Utils.TypetoJS(Num, args[1]) },
+  sub:  { num: 2, eval: args => Utils.TypetoJS(Num, args[0]) - Utils.TypetoJS(Num, args[1]) },
+  div:  { num: 2, eval: args => Utils.TypetoJS(Num, args[0]) / Utils.TypetoJS(Num, args[1]) },
+  mul:  { num: 2, eval: args => Utils.TypetoJS(Num, args[0]) * Utils.TypetoJS(Num, args[1]) },
 
   // Conditional instructions
   if: {

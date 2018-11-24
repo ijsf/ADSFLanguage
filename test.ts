@@ -63,7 +63,7 @@ cart_set_total cart_calculate_total
 `;
     */
     const source = `
-set foundItems cart_find_items [ 'bitcrusher' 'noize' 'transient' 'nogwat' 'nogietswatnietbestaat', 'bassxl' ]
+set foundItems cart_find_items [ add 1 1 'noize' 'transient' 'nogwat' 'nogietswatnietbestaat', 'bassxl' ]
 set foundItems cartitems_sort_by_amount foundItems
 set foundItems slice foundItems 0 1
     `;

@@ -65,6 +65,7 @@ cart_set_total cart_calculate_total
     const source = `
 set foundItems cart_find_items [ 'compressor' 'noize' 'transient' 'nogwat' 'nogietswatnietbestaat', 'bassxl' ]
 set foundItems slice cartitems_sort_by_amount foundItems 0 3
+set foundItems cartitems_set_amount foundItems 50%
     `;
 
     // Async timer test logic

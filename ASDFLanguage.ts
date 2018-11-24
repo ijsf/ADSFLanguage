@@ -59,6 +59,9 @@ const Utils = {
     if (type == Num) {
       return { val: Number(x), type: Num };
     }
+    else if (type == NumPercent) {
+      return { val: Number(x), type: NumPercent };
+    }
     else if (type == Str) {
       return { val: String(x), type: Str };
     }
@@ -73,11 +76,20 @@ const Utils = {
     }
   },
   // Convert from specific type to JS
-  TypetoJS: (type, ast) => {
+  TypetoJS: (type, ast, gracefulError?) => {
     if (type != ast.type) {
-      throw new ASDFProgramError(`Expected type ${type.toString()} but got ${ast.type.toString()}`);
+      if (!gracefulError) {
+        throw new ASDFProgramError(`Expected type ${type.toString()} but got ${ast.type.toString()}`);
+      }
+      else {
+        // Graceful error, handled by caller itself
+        return null;
+      }
     }
     if (ast.type == Num) {
+      return Number(ast.val);
+    }
+    else if (ast.type == NumPercent) {
       return Number(ast.val);
     }
     else if (ast.type == Str) {
@@ -196,6 +208,18 @@ const ops = {
     const items = Utils.TypetoJS(CartItems, args[0]);
     items.sort((a, b) => a.price.amount - b.price.amount);
     return Utils.JStoType(CartItems, items);
+  } },
+  // cartitems_set_amount(items: CartItems, amount: Num;NumPercent) -> CartItems
+  cartitems_set_amount: { num: 2, eval: (args) => {
+    const items = Utils.TypetoJS(CartItems, args[0]);
+    const amount = Utils.TypetoJS(Num, args[1], true), amountPercent = Utils.TypetoJS(NumPercent, args[1], true);
+    if (amount == null && amountPercent == null) {
+      throw new ASDFProgramError(`cartitems_set_amount expected Num or NumPercent`);
+    }
+    return Utils.JStoType(CartItems, items.map((item) => {
+      item.price.amount = amount ? amount : (amountPercent * item.price.amount);
+      return item;
+    }));
   } },
 
   // HACK
@@ -317,7 +341,7 @@ const parse = tokens => {
   const consume = () => tokens[c++];
 
   const parseNum = () => ({ val: Number(consume()), type: Num });
-  const parseNumPercent = () => ({ val: Number(consume().slice(0, -1)), type: NumPercent });
+  const parseNumPercent = () => ({ val: Number(consume().slice(0, -1) / 100), type: NumPercent });
   //const parseStr = () => ({ val: String(consume()).slice(1, -1), type: Str });
   const parseStr = () => {
     const c = consume();

@@ -142,6 +142,8 @@ const ops = {
   set: { num: 2,
     // Custom walk function to evaluate and set variables in memory
     walk: async (p, ast, data) => {
+      console.log('p',p);
+      console.log('ast',ast);
       // Internal AST validity check (debugging)
       if (!(p.length >= 2 && p[0].type == Var)) {
         throw new ASDFProgramError(`set is trying to set a wrong type ${p[0].type.toString()}`);
@@ -430,10 +432,10 @@ const parse = tokens => {
 
   // Expression parser
   const parseExpr = () => {
-    if (/[-+]?[0-9]*\.?[0-9]+$/.test(peek())) {
+    if (/^[-+]?[0-9]*\.?[0-9]+$/.test(peek())) {
       return parseNum();
     }
-    else if (/[-+]?[0-9]*\.?[0-9]+%$/.test(peek())) {
+    else if (/^[-+]?[0-9]*\.?[0-9]+%$/.test(peek())) {
       return parseNumPercent();
     }
     else if (/'.*'/.test(peek())) {

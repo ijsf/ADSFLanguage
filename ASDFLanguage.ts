@@ -3,12 +3,10 @@
  *
  * TODOs
  *
- * * CartItems array type: find, sort, slice
  * * Catch invalid tokens, e.g. with commas [ 'test', 'test' ], and error out instead of parsing them.
  * * Catch not enough arguments
- * * Parentheses
- * * Variable assignment
- * * Infix
+ * * Parentheses (argument stack/queue)
+ * * Infix? (argument stack/queue)
  */
 
 /*

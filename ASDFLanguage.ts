@@ -445,25 +445,18 @@ const evaluate = async (ast, data) => {
     }
   }
 
-  // Resolve expressions (children) sequentially after one another
-  let children = [];
-  for (const e of ast.expr) {
-    children.push(await e);
-  }
-
   // Check for custom AST walk function that needs to be called instead of normal AST walk
   if (ast.val && ops[ast.val].walk) {
-    return await ops[ast.val].walk(children, ast, data);
+    return await ops[ast.val].walk(ast.expr, ast, data);
   }
   else {
     // Use standard recursive AST walk, evaluating all (asynchronous) ASTs sequentially after one another
     let q = [];
-    for (const p of children) {
+    for (const p of ast.expr) {
       q.push(await evaluate(p, data));
     }
     console.log('val',ast.val);
     console.log('expr',ast.expr);
-    console.log('children',children);
     console.log('q',q);
     // If operation is defined
     if (ast.val && ops[ast.val].eval) {
@@ -478,7 +471,7 @@ const evaluate = async (ast, data) => {
       }
     }
     else if (ast.val && ops[ast.val].returnType) {
-      // No evaluation but return type expected, so do conversion using children
+      // No evaluation but return type expected, so do conversion using ast.expr children
       return Utils.JStoType(ops[ast.val].returnType, ast.expr);
     }
     else {

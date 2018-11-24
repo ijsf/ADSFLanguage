@@ -48,11 +48,9 @@ if >= count foundItems 3 {
 
 Features:
 
-* Lisp-like language -- prefix notation.
+* Minimal Lisp-like language -- prefix notation.
 * Asynchronous instructions -- Promise based to support async database queries, etc.
-* Comment blocks ```/* ... */```.
-* If conditional expressions.
-* Num type 
+* Modular and extendable.
 * TypeScript interpreter.
 
 Missing functionality:

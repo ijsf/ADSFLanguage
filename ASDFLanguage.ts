@@ -100,16 +100,29 @@ const Utils = {
 };
 
 const ops = {
+  // Arithmetic instructions
   add:  { num: 2, eval: args => Utils.JStoType(ASDF.number, Utils.TypetoJS(ASDF.number, args[0]) + Utils.TypetoJS(ASDF.number, args[1])) },
   sub:  { num: 2, eval: args => Utils.JStoType(ASDF.number, Utils.TypetoJS(ASDF.number, args[0]) - Utils.TypetoJS(ASDF.number, args[1])) },
   div:  { num: 2, eval: args => Utils.JStoType(ASDF.number, Utils.TypetoJS(ASDF.number, args[0]) / Utils.TypetoJS(ASDF.number, args[1])) },
   mul:  { num: 2, eval: args => Utils.JStoType(ASDF.number, Utils.TypetoJS(ASDF.number, args[0]) * Utils.TypetoJS(ASDF.number, args[1])) },
 
+  // Comparison instructions
+  // NOTE: These instructions do no type checking and make use of ast.val directly,
+  // so that multiple types are implicitly supported without further type checking!
+  '>': { num: 2, eval: (args) => Utils.JStoType(ASDF.number, args[0].val > args[1].val) },
+  '<': { num: 2, eval: (args) => Utils.JStoType(ASDF.number, args[0].val < args[1].val) },
+  '>=': { num: 2, eval: (args) => Utils.JStoType(ASDF.number, args[0].val >= args[1].val) },
+  '<=': { num: 2, eval: (args) => Utils.JStoType(ASDF.number, args[0].val <= args[1].val) },
+  '==': { num: 2, eval: (args) => Utils.JStoType(ASDF.number, args[0].val == args[1].val) },
+  '!=': { num: 2, eval: (args) => Utils.JStoType(ASDF.number, args[0].val != args[1].val) },
+  
   // Conditional instructions
   if: {
     conditional: true,
-    eval: args => {
-      return Utils.JStoType(ASDF.number, Number(args[0].val) ? args[1].val : 0);
+    eval: (args) => {
+      // If currently only support a number expression as its conditional (this works as long as booleans are encoded as 1 and 0)
+      const conditional = Utils.TypetoJS(ASDF.number, args[0]);
+      return Utils.JStoType(ASDF.number, conditional ? args[1].val : 0);
     },
     // Custom walk function, is needed so that conditionals expressions are never automatically evaluated
     walk: async (p, ast, data) => {
@@ -165,14 +178,6 @@ const ops = {
   '{': { end: '}' },
   '}': {},
 
-  // Comparison instructions
-  '>': { num: 2, eval: (args) => Utils.JStoType(ASDF.number, args[0].val > args[1].val) },
-  '<': { num: 2, eval: (args) => Utils.JStoType(ASDF.number, args[0].val < args[1].val) },
-  '>=': { num: 2, eval: (args) => Utils.JStoType(ASDF.number, args[0].val >= args[1].val) },
-  '<=': { num: 2, eval: (args) => Utils.JStoType(ASDF.number, args[0].val <= args[1].val) },
-  '==': { num: 2, eval: (args) => Utils.JStoType(ASDF.number, args[0].val == args[1].val) },
-  '!=': { num: 2, eval: (args) => Utils.JStoType(ASDF.number, args[0].val != args[1].val) },
-  
   // Array instructions
   // slice(input: array|cartitems, begin: number, end: number) -> array|cartitems
   slice: { num: 3, eval: (args) => {
@@ -278,7 +283,7 @@ const ops = {
     }
     let found = false, total = 0;
     for (let p of data.items) {
-      if (p.price.id == args[0].val) {
+      if (p.price.id == pricingId) {
         p.price.amount = amount ? amount : (amountPercent * p.price.amount)
         found = true;
       }
@@ -325,7 +330,7 @@ const ops = {
   } },
   // cart_add_discount(amount: number) -> number
   cart_add_discount: { num: 1, eval: (args, data) => {
-    const amount = args[0].val;
+    const amount = Utils.TypetoJS(ASDF.number, args[0]);
     data.discount += Utils.calcTotal(amount);
     return Utils.JStoType(ASDF.number, data.discount);
   } }

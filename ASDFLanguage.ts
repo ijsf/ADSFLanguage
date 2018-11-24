@@ -107,7 +107,8 @@ const ops = {
     eval: args => {
       return Number(args[0].val) ? Number(args[1].val) : 0;
     },
-    parse: async (p, ast, data) => {
+    // Custom walk function, is needed so that conditionals expressions are never automatically evaluated
+    walk: async (p, ast, data) => {
       // Internal AST validity check (debugging)
       if (!(p.length >= 2 && p[0].type == ConditionalOp && p[1].type == IfBodyOp)) {
         throw new ASDFInternalError(`if does not have ConditionalOp and IfBodyOp`);
@@ -128,7 +129,9 @@ const ops = {
   },
   
   // Variable assignment instructions
-  set: { num: 2, parse: async (p, ast, data) => {
+  set: { num: 2,
+    // Custom walk function to evaluate and set variables in memory
+    walk: async (p, ast, data) => {
     // Internal AST validity check (debugging)
     if (!(p.length >= 2 && p[0].type == Var)) {
       throw new ASDFProgramError(`set is trying to set a wrong type ${p[0].type.toString()}`);
@@ -448,16 +451,20 @@ const evaluate = async (ast, data) => {
     children.push(await e);
   }
 
-  // Check for custom AST parse function
-  if (ast.val && ops[ast.val].parse) {
-    return await ops[ast.val].parse(children, ast, data);
+  // Check for custom AST walk function that needs to be called instead of normal AST walk
+  if (ast.val && ops[ast.val].walk) {
+    return await ops[ast.val].walk(children, ast, data);
   }
   else {
-    // Use standard recursive AST evaluation, resolve all (asynchronous) ASTs sequentially after one another
+    // Use standard recursive AST walk, evaluating all (asynchronous) ASTs sequentially after one another
     let q = [];
     for (const p of children) {
       q.push(await evaluate(p, data));
     }
+    console.log('val',ast.val);
+    console.log('expr',ast.expr);
+    console.log('children',children);
+    console.log('q',q);
     // If operation is defined
     if (ast.val && ops[ast.val].eval) {
       // Parse expression, resolve Promise

@@ -222,18 +222,6 @@ const ops = {
     items.sort((a, b) => a.price.amount - b.price.amount);
     return Utils.JStoType(ASDF.cartitems, items);
   } },
-  // cartitems_set_amount(items: cartitems, amount: number|percent) -> cartitems
-  cartitems_set_amount: { num: 2, eval: (args) => {
-    const items = Utils.TypetoJS(ASDF.cartitems, args[0]);
-    const amount = Utils.TypetoJS(ASDF.number, args[1], true), amountPercent = Utils.TypetoJS(ASDF.percent, args[1], true);
-    if (amount == null && amountPercent == null) {
-      throw new ASDFProgramError(`cartitems_set_amount expected number or percent`);
-    }
-    return Utils.JStoType(ASDF.cartitems, items.map((item) => {
-      item.price.amount = amount ? amount : (amountPercent * item.price.amount);
-      return item;
-    }));
-  } },
 
   // cart_calculate_total() -> number
   cart_calculate_total: { num: 0, eval: (args, data) => {
@@ -256,6 +244,20 @@ const ops = {
       throw new ASDFProgramError(`Item '${pricingId}' does not exist`);
     }
     return Utils.JStoType(ASDF.number, item[0].price.amount);
+  } },
+  // cart_set_items_amount(items: cartitems, amount: number|percent) -> cartitems
+  cart_set_items_amount: { num: 2, eval: (args) => {
+    const items = Utils.TypetoJS(ASDF.cartitems, args[0]);
+    const amount = Utils.TypetoJS(ASDF.number, args[1], true), amountPercent = Utils.TypetoJS(ASDF.percent, args[1], true);
+    // NOTE: Since items is NOT a copy but a reference to data.items,
+    // we will modify items right here, effectively causing direct changes to data.items!
+    if (amount == null && amountPercent == null) {
+      throw new ASDFProgramError(`cart_set_items_amount expected number or percent`);
+    }
+    return Utils.JStoType(ASDF.cartitems, items.map((item) => {
+      item.price.amount = amount ? amount : (amountPercent * item.price.amount);
+      return item;
+    }));
   } },
   // cart_set_item_amount(pricingId: string, amount: number|percent) -> number
   cart_set_item_amount: { num: 2, eval: (args, data) => {

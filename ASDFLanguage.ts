@@ -3,11 +3,6 @@
  *
  * TODOs
  *
- * * Catch invalid tokens, e.g. with commas [ 'test', 'test' ], and error out instead of parsing them.
- * * Catch not enough arguments.
- * * Multiple #arguments for same instruction.
- * * Parentheses (argument stack/queue).
- * * Infix? (argument stack/queue).
  */
 
 /*
@@ -27,23 +22,23 @@ let CustomFunctions = {
 };
 
 /*
-  Operators
-
-  All operators symbols and tables are defined here.
+  Operator and type definitions
 */
-const Op = Symbol('op');
-const Array = Symbol('array');
-const Var = Symbol('var');
+const ASDF = {
+  array: Symbol('array'),
+  var: Symbol('var'),
 
-// Immediate operators (cannot contain any children ASTs)
-const Num = Symbol('num');
-const NumPercent = Symbol('numpercent');
-const Str = Symbol('str');
-const CartItems = Symbol('cartitems');
+  // Immediate operators (cannot contain any children ASTs)
+  number: Symbol('number'),
+  percent: Symbol('percent'),
+  string: Symbol('string'),
+  cartitems: Symbol('cartitems'),
 
-// Internal parse/eval only (non-specifiable) operators
-const ConditionalOp = Symbol('conditionalop');
-const IfBodyOp = Symbol('ifbodyop');
+  // Internal parse/eval only (non-specifiable) operators
+  op: Symbol('op'),
+  conditionalop: Symbol('conditionalop'),
+  ifbodyop: Symbol('ifbodyop'),
+};
 
 const Utils = {
   // Avoids floating point rounding numbers and guarantees exact definitions for 2 fraction digits
@@ -53,20 +48,20 @@ const Utils = {
 
   // Convert from JS to specific type
   JStoType: (type, x) => {
-    if (type == Num) {
-      return { val: Number(x), type: Num };
+    if (type == ASDF.number) {
+      return { val: Number(x), type };
     }
-    else if (type == NumPercent) {
-      return { val: Number(x), type: NumPercent };
+    else if (type == ASDF.percent) {
+      return { val: Number(x), type };
     }
-    else if (type == Str) {
-      return { val: String(x), type: Str };
+    else if (type == ASDF.string) {
+      return { val: String(x), type };
     }
-    else if (type == Array) {
-      return { val: x, type: Array };
+    else if (type == ASDF.array) {
+      return { val: x, type };
     }
-    else if (type == CartItems) {
-      return { val: x, type: CartItems };
+    else if (type == ASDF.cartitems) {
+      return { val: x, type };
     }
     else {
       throw new ASDFInternalError(`Type ${type ? type.toString() : type} could not be found`);
@@ -83,19 +78,19 @@ const Utils = {
         return null;
       }
     }
-    if (ast.type == Num) {
+    if (ast.type == ASDF.number) {
       return Number(ast.val);
     }
-    else if (ast.type == NumPercent) {
+    else if (ast.type == ASDF.percent) {
       return Number(ast.val);
     }
-    else if (ast.type == Str) {
+    else if (ast.type == ASDF.string) {
       return String(ast.val);
     }
-    else if (ast.type == Array) {
+    else if (ast.type == ASDF.array) {
       return ast.val.map((x) => x.val);
     }
-    else if (ast.type == CartItems) {
+    else if (ast.type == ASDF.cartitems) {
       return ast.val; // Mimics data.items, val doesn't contain any ASTs
     }
     else {
@@ -105,28 +100,28 @@ const Utils = {
 };
 
 const ops = {
-  add:  { num: 2, eval: args => Utils.JStoType(Num, Utils.TypetoJS(Num, args[0]) + Utils.TypetoJS(Num, args[1])) },
-  sub:  { num: 2, eval: args => Utils.JStoType(Num, Utils.TypetoJS(Num, args[0]) - Utils.TypetoJS(Num, args[1])) },
-  div:  { num: 2, eval: args => Utils.JStoType(Num, Utils.TypetoJS(Num, args[0]) / Utils.TypetoJS(Num, args[1])) },
-  mul:  { num: 2, eval: args => Utils.JStoType(Num, Utils.TypetoJS(Num, args[0]) * Utils.TypetoJS(Num, args[1])) },
+  add:  { num: 2, eval: args => Utils.JStoType(ASDF.number, Utils.TypetoJS(ASDF.number, args[0]) + Utils.TypetoJS(ASDF.number, args[1])) },
+  sub:  { num: 2, eval: args => Utils.JStoType(ASDF.number, Utils.TypetoJS(ASDF.number, args[0]) - Utils.TypetoJS(ASDF.number, args[1])) },
+  div:  { num: 2, eval: args => Utils.JStoType(ASDF.number, Utils.TypetoJS(ASDF.number, args[0]) / Utils.TypetoJS(ASDF.number, args[1])) },
+  mul:  { num: 2, eval: args => Utils.JStoType(ASDF.number, Utils.TypetoJS(ASDF.number, args[0]) * Utils.TypetoJS(ASDF.number, args[1])) },
 
   // Conditional instructions
   if: {
     conditional: true,
     eval: args => {
-      return Utils.JStoType(Num, Number(args[0].val) ? args[1].val : 0);
+      return Utils.JStoType(ASDF.number, Number(args[0].val) ? args[1].val : 0);
     },
     // Custom walk function, is needed so that conditionals expressions are never automatically evaluated
     walk: async (p, ast, data) => {
       // Internal AST validity check (debugging)
-      if (!(p.length >= 2 && p[0].type == ConditionalOp && p[1].type == IfBodyOp)) {
-        throw new ASDFInternalError(`if does not have ConditionalOp and IfBodyOp`);
+      if (!(p.length >= 2 && p[0].type == ASDF.conditionalop && p[1].type == ASDF.ifbodyop)) {
+        throw new ASDFInternalError(`if does not have conditionalop and ifbodyop`);
       }
 
-      // Evaluate ConditionalOp first
+      // Evaluate conditionalop first
       const condition = await evaluate(p[0], data);
       if (condition && condition[0].val) {
-        // If condition was true, evaluate IfBodyOp
+        // If condition was true, evaluate ifbodyop
         const e = await evaluate(p[1], data);
         return e;
       }
@@ -144,10 +139,10 @@ const ops = {
       console.log('p',p);
       console.log('ast',ast);
       // Internal AST validity check (debugging)
-      if (!(p.length >= 2 && p[0].type == Var)) {
+      if (!(p.length >= 2 && p[0].type == ASDF.var)) {
         throw new ASDFProgramError(`set is trying to set a wrong type ${p[0].type.toString()}`);
       }
-      const varName = p[0].val; // Var
+      const varName = p[0].val; // ASDF.var
       const varValueExpr = p[1];
     
       // Evaluate value expression
@@ -159,7 +154,7 @@ const ops = {
   } },
   
   // Array instructions
-  '[': { end: ']', eval: (args) => Utils.JStoType(Array, args) },
+  '[': { end: ']', eval: (args) => Utils.JStoType(ASDF.array, args) },
   ']': {},
 
   // Comment block instructions
@@ -171,76 +166,75 @@ const ops = {
   '}': {},
 
   // Comparison instructions
-  '>': { num: 2, eval: (args) => Utils.JStoType(Num, args[0].val > args[1].val) },
-  '<': { num: 2, eval: (args) => Utils.JStoType(Num, args[0].val < args[1].val) },
-  '>=': { num: 2, eval: (args) => Utils.JStoType(Num, args[0].val >= args[1].val) },
-  '<=': { num: 2, eval: (args) => Utils.JStoType(Num, args[0].val <= args[1].val) },
-  '==': { num: 2, eval: (args) => Utils.JStoType(Num, args[0].val == args[1].val) },
-  '!=': { num: 2, eval: (args) => Utils.JStoType(Num, args[0].val != args[1].val) },
+  '>': { num: 2, eval: (args) => Utils.JStoType(ASDF.number, args[0].val > args[1].val) },
+  '<': { num: 2, eval: (args) => Utils.JStoType(ASDF.number, args[0].val < args[1].val) },
+  '>=': { num: 2, eval: (args) => Utils.JStoType(ASDF.number, args[0].val >= args[1].val) },
+  '<=': { num: 2, eval: (args) => Utils.JStoType(ASDF.number, args[0].val <= args[1].val) },
+  '==': { num: 2, eval: (args) => Utils.JStoType(ASDF.number, args[0].val == args[1].val) },
+  '!=': { num: 2, eval: (args) => Utils.JStoType(ASDF.number, args[0].val != args[1].val) },
   
   // Array instructions
-  
-  // slice(input: Array|CartItems, begin: Num, end: Num) -> Array|CartItems
+  // slice(input: array|cartitems, begin: number, end: number) -> array|cartitems
   slice: { num: 3, eval: (args) => {
     const inputAst = args[0];
-    const begin = Number(Utils.TypetoJS(Num, args[1]));
-    const end = Number(Utils.TypetoJS(Num, args[2]));
-    if (inputAst.type == Array) {
-      return Utils.JStoType(Array, Utils.TypetoJS(Array, inputAst).slice(begin, end));
+    const begin = Number(Utils.TypetoJS(ASDF.number, args[1]));
+    const end = Number(Utils.TypetoJS(ASDF.number, args[2]));
+    if (inputAst.type == ASDF.array) {
+      return Utils.JStoType(ASDF.array, Utils.TypetoJS(ASDF.array, inputAst).slice(begin, end));
     }
-    else if (inputAst.type == CartItems) {
-      return Utils.JStoType(CartItems, Utils.TypetoJS(CartItems, inputAst).slice(begin, end));
+    else if (inputAst.type == ASDF.cartitems) {
+      return Utils.JStoType(ASDF.cartitems, Utils.TypetoJS(ASDF.cartitems, inputAst).slice(begin, end));
     }
     else {
-      throw new ASDFProgramError(`slice expects Array or CartItems type`);
+      throw new ASDFProgramError(`slice expects array or cartitems type`);
     }
   } },
-  // count(input: Array|CartItems) -> Num
+  // count(input: array|cartitems) -> number
   count: { num: 1, eval: (args) => {
     const inputAst = args[0];
-    if (inputAst.type == Array) {
-      return Utils.JStoType(Num, Utils.TypetoJS(Array, inputAst).length);
+    if (inputAst.type == ASDF.array) {
+      return Utils.JStoType(ASDF.number, Utils.TypetoJS(ASDF.array, inputAst).length);
     }
-    else if (inputAst.type == CartItems) {
-      return Utils.JStoType(Num, Utils.TypetoJS(CartItems, inputAst).length);
+    else if (inputAst.type == ASDF.cartitems) {
+      return Utils.JStoType(ASDF.number, Utils.TypetoJS(ASDF.cartitems, inputAst).length);
     }
     else {
-      throw new ASDFProgramError(`count expects Array or CartItems type`);
+      throw new ASDFProgramError(`count expects array or cartitems type`);
     }
   } },
 
-  // cart_find_items(pricingIds: Array) -> CartItems
+  // cart_find_items(pricingIds: array) -> cartitems
   cart_find_items: { num: 1, eval: (args, data) => {
     // NOTE: This function will return actual referenced data.items, and no copies!
     // This means that any future instructions that modify any item contents will automatically update data.items itself!
-    const pricingIds = Utils.TypetoJS(Array, args[0]);
-    return Utils.JStoType(CartItems, data.items.filter((item) => pricingIds.includes(item.price.id)));
+    const pricingIds = Utils.TypetoJS(ASDF.array, args[0]);
+    return Utils.JStoType(ASDF.cartitems, data.items.filter((item) => pricingIds.includes(item.price.id)));
   } },
-  // cartitems_sort_by_amount(items: CartItems) -> CartItems
+  // cartitems_sort_by_amount(items: cartitems) -> cartitems
   cartitems_sort_by_amount: { num: 1, eval: (args) => {
-    const items = Utils.TypetoJS(CartItems, args[0]);
+    const items = Utils.TypetoJS(ASDF.cartitems, args[0]);
     items.sort((a, b) => a.price.amount - b.price.amount);
-    return Utils.JStoType(CartItems, items);
+    return Utils.JStoType(ASDF.cartitems, items);
   } },
-  // cartitems_set_amount(items: CartItems, amount: Num|NumPercent) -> CartItems
+  // cartitems_set_amount(items: cartitems, amount: number|percent) -> cartitems
   cartitems_set_amount: { num: 2, eval: (args) => {
-    const items = Utils.TypetoJS(CartItems, args[0]);
-    const amount = Utils.TypetoJS(Num, args[1], true), amountPercent = Utils.TypetoJS(NumPercent, args[1], true);
+    const items = Utils.TypetoJS(ASDF.cartitems, args[0]);
+    const amount = Utils.TypetoJS(ASDF.number, args[1], true), amountPercent = Utils.TypetoJS(ASDF.percent, args[1], true);
     if (amount == null && amountPercent == null) {
-      throw new ASDFProgramError(`cartitems_set_amount expected Num or NumPercent`);
+      throw new ASDFProgramError(`cartitems_set_amount expected number or percent`);
     }
-    return Utils.JStoType(CartItems, items.map((item) => {
+    return Utils.JStoType(ASDF.cartitems, items.map((item) => {
       item.price.amount = amount ? amount : (amountPercent * item.price.amount);
       return item;
     }));
   } },
 
   // HACK
-  // cart_get_items_amount(pricingIds: Array, minItemsToGet: Num, maxItemsToGet: Num) -> Num
+  // cart_get_items_amount(pricingIds: array, minItemsToGet: number, maxItemsToGet: number) -> number
   cart_get_items_amount: { num: 3, eval: (args, data) => {
-    const pricingIds = args[0].val.map((x) => x.val); // Array AST to JS conversion
-    const minItemsToGet = args[1].val;
-    const maxItemsToGet = args[2].val;
+    const pricingIds = args[0].val.map((x) => x.val); // array AST to JS conversion
+    const minItemsToGet = Utils.TypetoJS(ASDF.number, args[1]);
+    const maxItemsToGet = Utils.TypetoJS(ASDF.number, args[2]);
     // Find all matching items
     let foundItems = data.items.filter((item) => pricingIds.includes(item.price.id));
     let result = 0;
@@ -251,36 +245,36 @@ const ops = {
     else {
       // Not enough items found, no summed amount
     }
-    return Utils.JStoType(Num, result);
+    return Utils.JStoType(ASDF.number, result);
   } },
-  // cart_calculate_total() -> Num
+  // cart_calculate_total() -> number
   cart_calculate_total: { num: 0, eval: (args, data) => {
-    return Utils.JStoType(Num, data.items.reduce((amount, item) => amount + item.price.amount, 0));
+    return Utils.JStoType(ASDF.number, data.items.reduce((amount, item) => amount + item.price.amount, 0));
   } },
-  // cart_count_items() -> Num
+  // cart_count_items() -> number
   cart_count_items: { num: 0, eval: (args, data) => {
-    return Utils.JStoType(Num, data.items.length);
+    return Utils.JStoType(ASDF.number, data.items.length);
   } },
-  // cart_has_item(pricingId: Str) -> Num
+  // cart_has_item(pricingId: string) -> number
   cart_has_item: { num: 1, eval: (args, data) => {
-    const pricingId = args[0].val;
-    return Utils.JStoType(Num, data.items && (data.items.filter((p) => p.price.id == pricingId).length > 0) ? 1 : 0);
+    const pricingId = Utils.TypetoJS(ASDF.string, args[0]);
+    return Utils.JStoType(ASDF.number, data.items && (data.items.filter((p) => p.price.id == pricingId).length > 0) ? 1 : 0);
   } },
-  // cart_get_item_amount(pricingId: Str) -> Num
+  // cart_get_item_amount(pricingId: string) -> number
   cart_get_item_amount: { num: 1, eval: (args, data) => {
-    const pricingId = args[0].val;
+    const pricingId = Utils.TypetoJS(ASDF.string, args[0]);
     const item = data.items ? data.items.filter((p) => p.price.id == pricingId) : [];
     if (item.length < 1) {
       throw new ASDFProgramError(`Item '${pricingId}' does not exist`);
     }
-    return Utils.JStoType(Num, item[0].price.amount);
+    return Utils.JStoType(ASDF.number, item[0].price.amount);
   } },
-  // cart_set_item_amount(pricingId: Str, amount: Num|NumPercent) -> Num
+  // cart_set_item_amount(pricingId: string, amount: number|percent) -> number
   cart_set_item_amount: { num: 2, eval: (args, data) => {
-    const pricingId = args[0].val;
-    const amount = Utils.TypetoJS(Num, args[1], true), amountPercent = Utils.TypetoJS(NumPercent, args[1], true);
+    const pricingId = Utils.TypetoJS(ASDF.string, args[0]);
+    const amount = Utils.TypetoJS(ASDF.number, args[1], true), amountPercent = Utils.TypetoJS(ASDF.percent, args[1], true);
     if (amount == null && amountPercent == null) {
-      throw new ASDFProgramError(`cart_set_item_amount expected Num or NumPercent`);
+      throw new ASDFProgramError(`cart_set_item_amount expected number or percent`);
     }
     let found = false, total = 0;
     for (let p of data.items) {
@@ -293,52 +287,53 @@ const ops = {
       }
       total += p.price.amount;
     }
-    return Utils.JStoType(Num, found ? 1 : 0);
+    return Utils.JStoType(ASDF.number, found ? 1 : 0);
   } },
-  // cart_set_all_items_amount(amount: Num|NumPercent) -> Num(1)
+  // cart_set_all_items_amount(amount: number|percent) -> number(1)
   cart_set_all_items_amount: { num: 1, eval: (args, data) => {
-    const amount = Utils.TypetoJS(Num, args[0], true), amountPercent = Utils.TypetoJS(NumPercent, args[0], true);
+    const amount = Utils.TypetoJS(ASDF.number, args[0], true), amountPercent = Utils.TypetoJS(ASDF.percent, args[0], true);
     if (amount == null && amountPercent == null) {
-      throw new ASDFProgramError(`cart_set_all_items_amount expected Num or NumPercent`);
+      throw new ASDFProgramError(`cart_set_all_items_amount expected number or percent`);
     }
     let total = 0;
     for (let p of data.items) {
       p.price.amount = amount ? amount : (amountPercent * p.price.amount)
       total += p.price.amount;
     }
-    return Utils.JStoType(Num, 1);
+    return Utils.JStoType(ASDF.number, 1);
   } },
-  // cart_add_item(pricingId: Str) async -> Num(1)
+  // cart_add_item(pricingId: string) async -> number(1)
   cart_add_item: { num: 1, eval: async (args, data) => {
+    const pricingId = Utils.TypetoJS(ASDF.string, args[0]);
     data.items.push(await CustomFunctions.getItem(
-      { id: String(args[0].val) }
+      { id: pricingId }
     ));
-    return Utils.JStoType(Num, 1);
+    return Utils.JStoType(ASDF.number, 1);
   } },
-  // cart_set_total(amount: Num|NumPercent) -> Num
+  // cart_set_total(amount: number|percent) -> number
   cart_set_total: { num: 1, eval: (args, data) => {
-    const amount = Utils.TypetoJS(Num, args[0], true), amountPercent = Utils.TypetoJS(NumPercent, args[0], true);
+    const amount = Utils.TypetoJS(ASDF.number, args[0], true), amountPercent = Utils.TypetoJS(ASDF.percent, args[0], true);
     if (amount == null && amountPercent == null) {
-      throw new ASDFProgramError(`cart_set_total expected Num or NumPercent`);
+      throw new ASDFProgramError(`cart_set_total expected number or percent`);
     }
     data.total = Utils.calcTotal(amount ? amount : (amountPercent * data.total));
-    return Utils.JStoType(Num, data.total);
+    return Utils.JStoType(ASDF.number, data.total);
   } },
-  // cart_get_total() -> Num
+  // cart_get_total() -> number
   cart_get_total: { num: 0, eval: (args, data) => {
-    return Utils.JStoType(Num, data.total);
+    return Utils.JStoType(ASDF.number, data.total);
   } },
-  // cart_add_discount(amount: Num) -> Num
+  // cart_add_discount(amount: number) -> number
   cart_add_discount: { num: 1, eval: (args, data) => {
     const amount = args[0].val;
     data.discount += Utils.calcTotal(amount);
-    return Utils.JStoType(Num, data.discount);
+    return Utils.JStoType(ASDF.number, data.discount);
   } }
 
   /* TODO: Possible future functions */
-  // cart_has_promo(promoName:Str)
-  // cart_has_coupon(couponId:Str)
-  // user_has_purchase(productId:Str)
+  // cart_has_promo(promoName:string)
+  // cart_has_coupon(couponId:string)
+  // user_has_purchase(productId:string)
 };
 
 /*
@@ -354,20 +349,16 @@ const parse = tokens => {
   const peek = () => tokens[c];
   const consume = () => tokens[c++];
 
-  const parseNum = () => ({ val: Number(consume()), type: Num });
-  const parseNumPercent = () => ({ val: Number(consume().slice(0, -1) / 100), type: NumPercent });
-  //const parseStr = () => ({ val: String(consume()).slice(1, -1), type: Str });
-  const parseStr = () => {
-    const c = consume();
-    return ({ val: String(c).slice(1, -1), type: Str });
-  }
+  const parseNumber = () => ({ val: Number(consume()), type: ASDF.number });
+  const parsePercent = () => ({ val: Number(consume().slice(0, -1) / 100), type: ASDF.percent });
+  const parseString = () => ({ val: String(consume()).slice(1, -1), type: ASDF.string });
 
   const parseVar = () => {
-    return { val: consume(), type: Var };
+    return { val: consume(), type: ASDF.var };
   }
 
   const parseOp = () => {
-    const node = { val: consume(), type: Op, expr: [] };
+    const node = { val: consume(), type: ASDF.op, expr: [] };
 
     // Check for valid operator
     if (!ops[node.val]) {
@@ -412,8 +403,8 @@ const parse = tokens => {
     }
     else if (conditional) {
       // Conditional operator: 2 operators (condition, clause)
-      node.expr.push({ type: ConditionalOp, expr: [ parseExpr() ] });
-      node.expr.push({ type: IfBodyOp, expr: [ parseExpr() ] });
+      node.expr.push({ type: ASDF.conditionalop, expr: [ parseExpr() ] });
+      node.expr.push({ type: ASDF.ifbodyop, expr: [ parseExpr() ] });
     }
     else {
       // Operator without further use
@@ -424,13 +415,13 @@ const parse = tokens => {
   // Expression parser
   const parseExpr = () => {
     if (/^[-+]?[0-9]*\.?[0-9]+$/.test(peek())) {
-      return parseNum();
+      return parseNumber();
     }
     else if (/^[-+]?[0-9]*\.?[0-9]+%$/.test(peek())) {
-      return parseNumPercent();
+      return parsePercent();
     }
     else if (/'.*'/.test(peek())) {
-      return parseStr();
+      return parseString();
     }
     else if (ops[peek()]) {
       return parseOp();
@@ -443,7 +434,7 @@ const parse = tokens => {
   };
 
   // Always evaluate input as code block so multiple expressions at top level are supported
-  const node = { val: '{', type: Op, expr: [] };
+  const node = { val: '{', type: ASDF.op, expr: [] };
   while (peek()) {
     node.expr.push(parseExpr());
   }
@@ -460,19 +451,19 @@ const evaluate = async (ast, data) => {
   // console.log("* " + JSON.stringify(ast));
 
   // Evaluate immediate values immediately, return AST
-  if (ast.type === Num) {
+  if (ast.type === ASDF.number) {
     return ast;
   }
-  else if (ast.type == NumPercent) {
+  else if (ast.type == ASDF.percent) {
     return ast;
   }
-  else if (ast.type == Str) {
+  else if (ast.type == ASDF.string) {
     return ast;
   }
-  else if (ast.type == CartItems) {
+  else if (ast.type == ASDF.cartitems) {
     return ast;
   }
-  else if (ast.type == Var) {
+  else if (ast.type == ASDF.var) {
     // This must be a variable (or an invalid token), so try to see if it is indeed set in vars memory
     if (String(ast.val) in data.vars) {
       // The AST is stored in vars memory, so retrieve its value which must've been evaluated at this point

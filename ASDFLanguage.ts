@@ -346,15 +346,7 @@ const ops = {
 
   The parser is responsible for turning the list of tokens into an Abstract Syntax Tree.
 
-  The parser uses the following grammar to parse the input token array:
-
-  ```
-  num := 0-9+
-  numpercent := 0-9+%
-  str := .*
-  op := add | sub | div | mul | if | { | } | \/\* | \*\/ | ...
-  expr := num | numpercent | 'str' | op expr+
-  ```
+  The grammar for this parser can be found in the README file.
 */
 
 const parse = tokens => {

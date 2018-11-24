@@ -31,10 +31,8 @@ if >= count foundItems 3 {
       0
       3
   
-  /* Set the amount to our fixed amount */
-  set foundItems
-    cartitems_set_amount foundItems
-      999
+  /* Set the price amount for all found items to our fixed price */
+  cart_set_items_amount foundItems 999
   
   /* Add "free" item */
   cart_add_item 'bassxl'

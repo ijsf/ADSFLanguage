@@ -234,24 +234,6 @@ const ops = {
     }));
   } },
 
-  // HACK
-  // cart_get_items_amount(pricingIds: array, minItemsToGet: number, maxItemsToGet: number) -> number
-  cart_get_items_amount: { num: 3, eval: (args, data) => {
-    const pricingIds = args[0].val.map((x) => x.val); // array AST to JS conversion
-    const minItemsToGet = Utils.TypetoJS(ASDF.number, args[1]);
-    const maxItemsToGet = Utils.TypetoJS(ASDF.number, args[2]);
-    // Find all matching items
-    let foundItems = data.items.filter((item) => pricingIds.includes(item.price.id));
-    let result = 0;
-    if (foundItems.length >= minItemsToGet) {
-      // Just use the first N items, forget about the rest (HACK: will cause problems with items that have differing prices!)
-      result = foundItems.slice(0, maxItemsToGet).reduce((amount, item) => amount + item.price.amount, 0);
-    }
-    else {
-      // Not enough items found, no summed amount
-    }
-    return Utils.JStoType(ASDF.number, result);
-  } },
   // cart_calculate_total() -> number
   cart_calculate_total: { num: 0, eval: (args, data) => {
     return Utils.JStoType(ASDF.number, data.items.reduce((amount, item) => amount + item.price.amount, 0));

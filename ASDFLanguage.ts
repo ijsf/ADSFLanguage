@@ -4,9 +4,10 @@
  * TODOs
  *
  * * Catch invalid tokens, e.g. with commas [ 'test', 'test' ], and error out instead of parsing them.
- * * Catch not enough arguments
- * * Parentheses (argument stack/queue)
- * * Infix? (argument stack/queue)
+ * * Catch not enough arguments.
+ * * Multiple #arguments for same instruction.
+ * * Parentheses (argument stack/queue).
+ * * Infix? (argument stack/queue).
  */
 
 /*

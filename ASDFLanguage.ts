@@ -262,7 +262,7 @@ const ops = {
     }
     return Utils.JStoType(Num, item[0].price.amount);
   } },
-  // cart_set_item_amount(pricingId: Str, amount: Num|NumPercent)
+  // cart_set_item_amount(pricingId: Str, amount: Num|NumPercent) -> Num
   cart_set_item_amount: { num: 2, eval: (args, data) => {
     const pricingId = args[0].val;
     const amount = Utils.TypetoJS(Num, args[1], true), amountPercent = Utils.TypetoJS(NumPercent, args[1], true);
@@ -282,7 +282,7 @@ const ops = {
     }
     return Utils.JStoType(Num, found ? 1 : 0);
   } },
-  // cart_set_all_items_amount(amount: Num|NumPercent)
+  // cart_set_all_items_amount(amount: Num|NumPercent) -> Num(1)
   cart_set_all_items_amount: { num: 1, eval: (args, data) => {
     const amount = Utils.TypetoJS(Num, args[0], true), amountPercent = Utils.TypetoJS(NumPercent, args[0], true);
     if (amount == null && amountPercent == null) {
@@ -295,7 +295,7 @@ const ops = {
     }
     return Utils.JStoType(Num, 1);
   } },
-  // cart_add_item(pricingId: Str) async
+  // cart_add_item(pricingId: Str) async -> Num(1)
   cart_add_item: { num: 1, eval: async (args, data) => {
     data.items.push(await CustomFunctions.getItem(
       { id: String(args[0].val) }
@@ -315,7 +315,7 @@ const ops = {
   cart_get_total: { num: 0, eval: (args, data) => {
     return Utils.JStoType(Num, data.total);
   } },
-  // cart_add_discount(amount: Num)
+  // cart_add_discount(amount: Num) -> Num
   cart_add_discount: { num: 1, eval: (args, data) => {
     const amount = args[0].val;
     data.discount += Utils.calcTotal(amount);

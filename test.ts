@@ -15,35 +15,35 @@ import { ASDFSyntaxError, ASDFInternalError, ASDFProgramError } from './ASDFLang
           id: 1,
           price: {
             id: 'compressor',
-            amount: 10
+            amount: 5
           }
         },
         {
           id: 2,
           price: {
             id: 'bitcrusher',
-            amount: 10
+            amount: 4
           }
         },
         {
           id: 3,
           price: {
             id: 'noize',
-            amount: 10
+            amount: 3
           }
         },
         {
           id: 4,
           price: {
             id: 'wtvr',
-            amount: 10
+            amount: 2
           }
         },
         {
           id: 5,
           price: {
             id: 'transient',
-            amount: 10
+            amount: 1
           }
         },
       ],
@@ -64,7 +64,8 @@ cart_set_total cart_calculate_total
     */
     const source = `
 set foundItems cart_find_items [ 'bitcrusher' 'noize' 'transient' 'nogwat' 'nogietswatnietbestaat', 'bassxl' ]
-foundItems
+set foundItems cartitems_sort_by_amount foundItems
+set foundItems slice foundItems 0 1
     `;
 
     // Async timer test logic

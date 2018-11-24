@@ -87,7 +87,7 @@ const Utils = {
       return ast.val.map((x) => x.val);
     }
     else if (ast.type == CartItems) {
-      return ast.val.map((x) => x.val);
+      return ast.val; // Mimics data.items, val doesn't contain any ASTs
     }
     else {
       throw new ASDFInternalError(`Unknown type ${type.toString()}`);
@@ -163,11 +163,38 @@ const ops = {
   '<=': { num: 2, eval: (args) => args[0].val <= args[1].val },
   '==': { num: 2, eval: (args) => args[0].val == args[1].val },
   '!=': { num: 2, eval: (args) => args[0].val != args[1].val },
+  
+  // Array instructions
+  
+  // slice(input: Array|CartItems, begin: Num, end: Num) -> Array|CartItems
+  slice: { num: 3, eval: (args) => {
+    const inputAst = args[0];
+    const begin = Number(Utils.TypetoJS(Num, args[1]));
+    const end = Number(Utils.TypetoJS(Num, args[2]));
+    console.log(inputAst);
+    let input;
+    if (inputAst.type == Array) {
+      return Utils.JStoType(Array, Utils.TypetoJS(Array, inputAst).slice(begin, end));
+    }
+    else if (inputAst.type == CartItems) {
+      console.log(Utils.JStoType(CartItems, Utils.TypetoJS(CartItems, inputAst).slice(begin, end)));
+      return Utils.JStoType(CartItems, Utils.TypetoJS(CartItems, inputAst).slice(begin, end));
+    }
+    else {
+      throw new ASDFProgramError(`slice expects Array or CartItems type`);
+    }
+  } },
 
   // cart_find_items(pricingIds: Array) -> CartItems
   cart_find_items: { num: 1, returnType: CartItems, eval: (args, data) => {
     const pricingIds = Utils.TypetoJS(Array, args[0]);
     return data.items.filter((item) => pricingIds.includes(item.price.id));
+  } },
+  // cartitems_sort_by_amount(items: CartItems) -> CartItems
+  cartitems_sort_by_amount: { num: 1, returnType: CartItems, eval: (args) => {
+    const items = Utils.TypetoJS(CartItems, args[0]);
+    items.sort((a, b) => a.price.amount - b.price.amount);
+    return items;
   } },
 
   // HACK
@@ -407,7 +434,7 @@ const evaluate = async (ast, data) => {
     // This must be a variable (or an invalid token), so try to see if it is indeed set in vars memory
     if (String(ast.val) in data.vars) {
       // The AST is stored in vars memory, so retrieve its value which must've been evaluated at this point
-      return data.vars[ast.val].val;
+      return data.vars[ast.val];
     }
     else {
       // No such variable

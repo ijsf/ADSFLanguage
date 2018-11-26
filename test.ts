@@ -1,5 +1,5 @@
-import { ASDFInterpreter } from './ASDFLanguage';
-import { ASDFSyntaxError, ASDFInternalError, ASDFProgramError } from './ASDFLanguage';
+import { ASDFInterpreter } from "./ASDFLanguage";
+import { ASDFSyntaxError, ASDFInternalError, ASDFProgramError } from "./ASDFLanguage";
 
 /*
   Main
@@ -14,35 +14,35 @@ import { ASDFSyntaxError, ASDFInternalError, ASDFProgramError } from './ASDFLang
         {
           id: 1,
           price: {
-            id: 'compressor',
+            id: "compressor",
             amount: 5
           }
         },
         {
           id: 2,
           price: {
-            id: 'bitcrusher',
+            id: "bitcrusher",
             amount: 4
           }
         },
         {
           id: 3,
           price: {
-            id: 'noize',
+            id: "noize",
             amount: 3
           }
         },
         {
           id: 4,
           price: {
-            id: 'nogwatx',
+            id: "nogwatx",
             amount: 2
           }
         },
         {
           id: 5,
           price: {
-            id: 'transient',
+            id: "transient",
             amount: 1
           }
         },
@@ -75,39 +75,39 @@ if >= count foundItems 3 {
         foundItems
       0
       3
-  
+
   /* Set the price amount for all found items to our fixed price */
   cart_set_items_amount foundItems 999
-  
+
   /* Add "free" item */
   cart_add_item 'bassxl'
-  
+
   /* Set 0 price amount for "free" item */
   cart_set_item_amount 'bassxl' 0
 }
 `;
 
     // Async timer test logic
-    let timeout = (ms) => {
+    const timeout = (ms) => {
         return new Promise(resolve => setTimeout(resolve, ms));
     };
 
     // Run the actual program on the input data
     const output = await ASDFInterpreter.run(input, source, {
       getItem: async ({ id }) => {
-        console.log('getItem start timer');
+        console.log("getItem start timer");
         await timeout(1000);
-        console.log('getItem executed timer');
+        console.log("getItem executed timer");
         return {
           id: 9999,
           price: {
-            id: 'bassxl',
+            id: "bassxl",
             amount: 15
           }
         };
       }
     });
-    
+
     // Log the output
     console.log(JSON.stringify(output));
   }

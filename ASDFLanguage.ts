@@ -18,26 +18,26 @@ const lex = str => str.split(/\s+/).map(s => s.trim()).filter(s => s.length);
   Object containing callbacks for custom functionality.
 */
 let CustomFunctions = {
-  getItem: async ({ id }) => { throw new ASDFInternalError('CustomFunctions.getItem not defined') }
+  getItem: async ({ id }) => { throw new ASDFInternalError("CustomFunctions.getItem not defined"); }
 };
 
 /*
   Operator and type definitions
 */
 const ASDF = {
-  array: Symbol('array'),
-  var: Symbol('var'),
+  array: Symbol("array"),
+  var: Symbol("var"),
 
   // Immediate operators (cannot contain any children ASTs)
-  number: Symbol('number'),
-  percent: Symbol('percent'),
-  string: Symbol('string'),
-  cartitems: Symbol('cartitems'),
+  number: Symbol("number"),
+  percent: Symbol("percent"),
+  string: Symbol("string"),
+  cartitems: Symbol("cartitems"),
 
   // Internal parse/eval only (non-specifiable) operators
-  op: Symbol('op'),
-  conditionalop: Symbol('conditionalop'),
-  ifbodyop: Symbol('ifbodyop'),
+  op: Symbol("op"),
+  conditionalop: Symbol("conditionalop"),
+  ifbodyop: Symbol("ifbodyop"),
 };
 
 const Utils = {
@@ -109,12 +109,12 @@ const ops = {
   // Comparison instructions
   // NOTE: These instructions do no type checking and make use of ast.val directly,
   // so that multiple types are implicitly supported without further type checking!
-  '>': { num: 2, eval: (args) => Utils.JStoType(ASDF.number, args[0].val > args[1].val) },
-  '<': { num: 2, eval: (args) => Utils.JStoType(ASDF.number, args[0].val < args[1].val) },
-  '>=': { num: 2, eval: (args) => Utils.JStoType(ASDF.number, args[0].val >= args[1].val) },
-  '<=': { num: 2, eval: (args) => Utils.JStoType(ASDF.number, args[0].val <= args[1].val) },
-  '==': { num: 2, eval: (args) => Utils.JStoType(ASDF.number, args[0].val == args[1].val) },
-  '!=': { num: 2, eval: (args) => Utils.JStoType(ASDF.number, args[0].val != args[1].val) },
+  ">": { num: 2, eval: (args) => Utils.JStoType(ASDF.number, args[0].val > args[1].val) },
+  "<": { num: 2, eval: (args) => Utils.JStoType(ASDF.number, args[0].val < args[1].val) },
+  ">=": { num: 2, eval: (args) => Utils.JStoType(ASDF.number, args[0].val >= args[1].val) },
+  "<=": { num: 2, eval: (args) => Utils.JStoType(ASDF.number, args[0].val <= args[1].val) },
+  "==": { num: 2, eval: (args) => Utils.JStoType(ASDF.number, args[0].val == args[1].val) },
+  "!=": { num: 2, eval: (args) => Utils.JStoType(ASDF.number, args[0].val != args[1].val) },
   
   // Conditional instructions
   if: {
@@ -149,8 +149,8 @@ const ops = {
   set: { num: 2,
     // Custom walk function to evaluate and set variables in memory
     walk: async (p, ast, data) => {
-      console.log('p',p);
-      console.log('ast',ast);
+      console.log("p",p);
+      console.log("ast",ast);
       // Internal AST validity check (debugging)
       if (!(p.length >= 2 && p[0].type == ASDF.var)) {
         throw new ASDFProgramError(`set is trying to set a wrong type ${p[0].type.toString()}`);
@@ -167,16 +167,16 @@ const ops = {
   } },
   
   // Array instructions
-  '[': { end: ']', eval: (args) => Utils.JStoType(ASDF.array, args) },
-  ']': {},
+  "[": { end: "]", eval: (args) => Utils.JStoType(ASDF.array, args) },
+  "]": {},
 
   // Comment block instructions
-  '/*': { end: '*/', comment: true },
-  '*/': {},
+  "/*": { end: "*/", comment: true },
+  "*/": {},
 
   // Code block instructions
-  '{': { end: '}' },
-  '}': {},
+  "{": { end: "}" },
+  "}": {},
 
   // Array instructions
   // slice(input: array|cartitems, begin: number, end: number) -> array|cartitems
@@ -424,7 +424,7 @@ const parse = tokens => {
   };
 
   // Always evaluate input as code block so multiple expressions at top level are supported
-  const node = { val: '{', type: ASDF.op, expr: [] };
+  const node = { val: "{", type: ASDF.op, expr: [] };
   while (peek()) {
     node.expr.push(parseExpr());
   }

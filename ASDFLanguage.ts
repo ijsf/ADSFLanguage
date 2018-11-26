@@ -115,7 +115,7 @@ const ops = {
   "<=": { num: 2, eval: (args) => Utils.JStoType(ASDF.number, args[0].val <= args[1].val) },
   "==": { num: 2, eval: (args) => Utils.JStoType(ASDF.number, args[0].val == args[1].val) },
   "!=": { num: 2, eval: (args) => Utils.JStoType(ASDF.number, args[0].val != args[1].val) },
-  
+
   // Conditional instructions
   if: {
     conditional: true,
@@ -144,7 +144,7 @@ const ops = {
       }
     }
   },
-  
+
   // Variable assignment instructions
   set: { num: 2,
     // Custom walk function to evaluate and set variables in memory
@@ -157,15 +157,15 @@ const ops = {
       }
       const varName = p[0].val; // ASDF.var
       const varValueExpr = p[1];
-    
+
       // Evaluate value expression
       const varValue = await evaluate(varValueExpr, data);
-    
+
       // Assign to var in vars memory
       data.vars[varName] = varValue;
       return varValue;
   } },
-  
+
   // Array instructions
   "[": { end: "]", eval: (args) => Utils.JStoType(ASDF.array, args) },
   "]": {},
@@ -354,7 +354,7 @@ const parse = tokens => {
     if (!ops[node.val]) {
       throw new ASDFSyntaxError(`${node.val} is not a valid operator`);
     }
-    
+
     const numOperands = ops[node.val].num;
     const endOperator = ops[node.val].end;
     const conditional = ops[node.val].conditional;
@@ -552,7 +552,7 @@ export class ASDFInterpreter {
 
     // Evaluate AST
     await evaluate(ast, data);
-    
+
     // Extra validity checks
     {
       // Ensure discount is a positive integer or 0
@@ -568,7 +568,7 @@ export class ASDFInterpreter {
         throw new ASDFProgramError(`Discount (${data.discount}) is greater than total (${data.total})`);
       }
     }
-    
+
     return data;
   }
 }

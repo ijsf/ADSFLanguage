@@ -48,7 +48,8 @@ import { ASDFSyntaxError, ASDFInternalError, ASDFProgramError } from "./ASDFLang
         },
       ],
       total: 0,
-      discount: 0
+      discount: 0,
+      coupons: [ "bassxl" ]
     };
 
     // ASDF program source

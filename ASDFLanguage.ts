@@ -548,6 +548,18 @@ export class ASDFInterpreter {
     // Prepare variable memory (stores ASTs of values)
     data.vars = {};
 
+    // Extra validity checks
+    {
+      // Ensure discount is a finite number
+      if (!(typeof data.discount === "number" && Number.isFinite(data.discount))) {
+        throw new ASDFProgramError(`Discount is not a valid Number: ${data.discount}`);
+      }
+      // Ensure total is a finite number
+      if (!(typeof data.total === "number" && Number.isFinite(data.total))) {
+        throw new ASDFProgramError(`Total is not a valid Number: ${data.total}`);
+      }
+    }
+
     // Evaluate AST
     await evaluate(ast, data);
 
@@ -555,11 +567,11 @@ export class ASDFInterpreter {
     {
       // Ensure discount is a positive integer or 0
       if (!(Number.isFinite(data.discount) && data.discount >= 0)) {
-        throw new ASDFProgramError(`Discount is not valid: ${data.discount}`);
+        throw new ASDFProgramError(`Discount is not a valid positive Number: ${data.discount}`);
       }
       // Ensure total is a positive integer or 0
       if (!(Number.isFinite(data.total) && data.total >= 0)) {
-        throw new ASDFProgramError(`Total is not valid: ${data.total}`);
+        throw new ASDFProgramError(`Total is not a valid positive Number: ${data.total}`);
       }
       // Ensure discount is never greater than total
       if (data.discount > data.total) {

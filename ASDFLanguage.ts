@@ -149,8 +149,6 @@ const ops = {
   set: { num: 2,
     // Custom walk function to evaluate and set variables in memory
     walk: async (p, ast, data) => {
-      console.log("p",p);
-      console.log("ast",ast);
       // Internal AST validity check (debugging)
       if (!(p.length >= 2 && p[0].type == ASDF.var)) {
         throw new ASDFProgramError(`set is trying to set a wrong type ${p[0].type.toString()}`);

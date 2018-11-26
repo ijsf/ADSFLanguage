@@ -269,7 +269,7 @@ const ops = {
     let found = false, total = 0;
     for (let p of data.items) {
       if (p.price.id == pricingId) {
-        p.price.amount = amount ? amount : (amountPercent * p.price.amount)
+        p.price.amount = amount ? amount : (amountPercent * p.price.amount);
         found = true;
       }
       if (!Number.isFinite(p.price.amount)) {
@@ -287,7 +287,7 @@ const ops = {
     }
     let total = 0;
     for (let p of data.items) {
-      p.price.amount = amount ? amount : (amountPercent * p.price.amount)
+      p.price.amount = amount ? amount : (amountPercent * p.price.amount);
       total += p.price.amount;
     }
     return Utils.JStoType(ASDF.number, 1);
@@ -345,7 +345,7 @@ const parse = tokens => {
 
   const parseVar = () => {
     return { val: consume(), type: ASDF.var };
-  }
+  };
 
   const parseOp = () => {
     const node = { val: consume(), type: ASDF.op, expr: [] };

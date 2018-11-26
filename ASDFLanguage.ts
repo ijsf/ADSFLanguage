@@ -267,7 +267,7 @@ const ops = {
       throw new ASDFProgramError(`cart_set_item_amount expected number or percent`);
     }
     let found = false, total = 0;
-    for (let p of data.items) {
+    for (const p of data.items) {
       if (p.price.id == pricingId) {
         p.price.amount = amount ? amount : (amountPercent * p.price.amount);
         found = true;
@@ -286,7 +286,7 @@ const ops = {
       throw new ASDFProgramError(`cart_set_all_items_amount expected number or percent`);
     }
     let total = 0;
-    for (let p of data.items) {
+    for (const p of data.items) {
       p.price.amount = amount ? amount : (amountPercent * p.price.amount);
       total += p.price.amount;
     }
@@ -471,7 +471,7 @@ const evaluate = async (ast, data) => {
   }
   else {
     // Use standard recursive AST walk, evaluating all (asynchronous) ASTs sequentially after one another
-    let q = [];
+    const q = [];
     for (const p of ast.expr) {
       q.push(await evaluate(p, data));
     }
@@ -545,7 +545,7 @@ export class ASDFInterpreter {
     const ast = parse(lex(program));
 
     // Copy input object to new data object that will be changed by evaluate
-    let data = JSON.parse(JSON.stringify(input));
+    const data = JSON.parse(JSON.stringify(input));
 
     // Prepare variable memory (stores ASTs of values)
     data.vars = {};

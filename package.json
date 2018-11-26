@@ -5,7 +5,8 @@
   "dependencies": {},
   "devDependencies": {},
   "scripts": {
-    "build": "tsc --lib es2016,dom,es5 test.ts",
+    "lint": "tslint ASDFLanguage.ts test.ts",
+    "build": "tslint ASDFLanguage.ts test.ts && tsc --lib es2016,dom,es5 test.ts",
     "start": "node test.js"
   }
 }

@@ -75,7 +75,7 @@ const Utils = {
       }
       else {
         // Graceful error, handled by caller itself
-        return null;
+        return undefined;
       }
     }
     if (ast.type == ASDF.number) {
@@ -251,7 +251,7 @@ const ops = {
     const amount = Utils.TypetoJS(ASDF.number, args[1], true), amountPercent = Utils.TypetoJS(ASDF.percent, args[1], true);
     // NOTE: Since items is NOT a copy but a reference to data.items,
     // we will modify items right here, effectively causing direct changes to data.items!
-    if (amount == null && amountPercent == null) {
+    if (amount == undefined && amountPercent == undefined) {
       throw new ASDFProgramError(`cart_set_items_amount expected number or percent`);
     }
     return Utils.JStoType(ASDF.cartitems, items.map((item) => {
@@ -263,7 +263,7 @@ const ops = {
   cart_set_item_amount: { num: 2, eval: (args, data) => {
     const pricingId = Utils.TypetoJS(ASDF.string, args[0]);
     const amount = Utils.TypetoJS(ASDF.number, args[1], true), amountPercent = Utils.TypetoJS(ASDF.percent, args[1], true);
-    if (amount == null && amountPercent == null) {
+    if (amount == undefined && amountPercent == undefined) {
       throw new ASDFProgramError(`cart_set_item_amount expected number or percent`);
     }
     let found = false, total = 0;
@@ -282,7 +282,7 @@ const ops = {
   // cart_set_all_items_amount(amount: number|percent) -> number(1)
   cart_set_all_items_amount: { num: 1, eval: (args, data) => {
     const amount = Utils.TypetoJS(ASDF.number, args[0], true), amountPercent = Utils.TypetoJS(ASDF.percent, args[0], true);
-    if (amount == null && amountPercent == null) {
+    if (amount == undefined && amountPercent == undefined) {
       throw new ASDFProgramError(`cart_set_all_items_amount expected number or percent`);
     }
     let total = 0;
@@ -303,7 +303,7 @@ const ops = {
   // cart_set_total(amount: number|percent) -> number
   cart_set_total: { num: 1, eval: (args, data) => {
     const amount = Utils.TypetoJS(ASDF.number, args[0], true), amountPercent = Utils.TypetoJS(ASDF.percent, args[0], true);
-    if (amount == null && amountPercent == null) {
+    if (amount == undefined && amountPercent == undefined) {
       throw new ASDFProgramError(`cart_set_total expected number or percent`);
     }
     data.total = Utils.calcTotal(amount ? amount : (amountPercent * data.total));

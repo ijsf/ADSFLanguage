@@ -253,7 +253,7 @@ const ops = {
       throw new ASDFProgramError(`cart_set_items_amount expected number or percent`);
     }
     return Utils.JStoType(ASDF.cartitems, items.map((item) => {
-      item.price.amount = amount ? amount : (amountPercent * item.price.amount);
+      item.price.amount = amount !== undefined ? amount : (amountPercent * item.price.amount);
       return item;
     }));
   } },
@@ -267,7 +267,7 @@ const ops = {
     let found = false, total = 0;
     for (const p of data.items) {
       if (p.price.id == pricingId) {
-        p.price.amount = amount ? amount : (amountPercent * p.price.amount);
+        p.price.amount = amount !== undefined ? amount : (amountPercent * p.price.amount);
         found = true;
       }
       if (!Number.isFinite(p.price.amount)) {
@@ -275,7 +275,7 @@ const ops = {
       }
       total += p.price.amount;
     }
-    return Utils.JStoType(ASDF.number, found ? 1 : 0);
+    return Utils.JStoType(ASDF.number, found === true ? 1 : 0);
   } },
   // cart_set_all_items_amount(amount: number|percent) -> number(1)
   cart_set_all_items_amount: { num: 1, eval: (args, data) => {
@@ -285,7 +285,7 @@ const ops = {
     }
     let total = 0;
     for (const p of data.items) {
-      p.price.amount = amount ? amount : (amountPercent * p.price.amount);
+      p.price.amount = amount !== undefined ? amount : (amountPercent * p.price.amount);
       total += p.price.amount;
     }
     return Utils.JStoType(ASDF.number, 1);
@@ -304,7 +304,7 @@ const ops = {
     if (amount == undefined && amountPercent == undefined) {
       throw new ASDFProgramError(`cart_set_total expected number or percent`);
     }
-    data.total = Utils.calcTotal(amount ? amount : (amountPercent * data.total));
+    data.total = Utils.calcTotal(amount !== undefined ? amount : (amountPercent * data.total));
     return Utils.JStoType(ASDF.number, data.total);
   } },
   // cart_get_total() -> number

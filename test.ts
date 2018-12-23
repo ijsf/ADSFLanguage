@@ -10,6 +10,7 @@ import { ASDFSyntaxError, ASDFInternalError, ASDFProgramError } from "./ASDFLang
   try {
     // Input data
     const input = {
+      user: "1234",
       items: [
         {
           id: 1,
@@ -64,22 +65,11 @@ cart_set_total cart_calculate_total
 `;
     */
     const source = `
-/* Find any matching products */
-set foundItems cart_find_items [ 'compressor' 'noize' 'transient' 'nogwat' 'nogietswatnietbestaat', 'bassxl' ]
+/* Find matching purchased products */
+set purchasedItems user_find_items [ 'b' 'd' 'x' 'y' 'z' ]
 
 /* Check if there are at least 3 matching products */
-if >= count foundItems 3 {
-  /* Only consider the first 3 matching products when sorted by price amount */
-  set foundItems
-    slice
-      cartitems_sort_by_amount
-        foundItems
-      0
-      3
-
-  /* Set the price amount for all found items to our fixed price */
-  cart_set_items_amount foundItems 999
-
+if >= count purchasedItems 1 {
   /* Add "free" item */
   cart_add_item 'bassxl'
 
@@ -106,6 +96,15 @@ if >= count foundItems 3 {
             amount: 15
           }
         };
+      },
+      getUserPricings: async ({ user }) => {
+        // Check if user is valid
+        if (user) {
+          return [ "a", "b", "c", "d" ];
+        }
+        else {
+          return [];
+        }
       }
     });
 

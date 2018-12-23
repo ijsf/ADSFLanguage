@@ -18,7 +18,8 @@ const lex = str => str.split(/\s+/).map(s => s.trim()).filter(s => s.length);
   Object containing callbacks for custom functionality.
 */
 let CustomFunctions = {
-  getItem: async ({ id }) => { throw new ASDFInternalError("CustomFunctions.getItem not defined"); }
+  getItem: async ({ id }) => { throw new ASDFInternalError("CustomFunctions.getItem not defined"); },
+  getUserPricings: async ({ user }) => { throw new ASDFInternalError("CustomFunctions.getUserPricings not defined"); }
 };
 
 /*
@@ -321,6 +322,13 @@ const ops = {
   cart_has_coupon: { num: 1, eval: (args, data) => {
     const coupon = Utils.TypetoJS(ASDF.string, args[0]);
     return Utils.JStoType(ASDF.number, data.coupons && data.coupons.includes(coupon));
+  } },
+
+  // user_find_items(pricingIds: array) -> array
+  user_find_items: { num: 1, eval: async (args, data) => {
+    const pricingIds = Utils.TypetoJS(ASDF.array, args[0]);
+    const userPricings: Array<String> = await CustomFunctions.getUserPricings({ user: data.user });
+    return Utils.JStoType(ASDF.array, userPricings.filter((pricing) => pricingIds.includes(pricing)));
   } }
 
   /* TODO: Possible future functions */
